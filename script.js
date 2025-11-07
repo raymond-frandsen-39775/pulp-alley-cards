@@ -144,32 +144,42 @@
       }
     }
 
+	function renderIconInline(raw) {
+	  if (!raw) return '';
 
+	  // normalize: trim, lowercase, strip extension & symbols
+	  let key = String(raw).trim().toLowerCase()
+		.replace(/\.(png|jpe?g|svg|webp)$/i, '')
+		.replace(/[^a-z0-9]+/g, '');
 
+	  // aliases (your two-letter codes → canonical)
+	  const alias = {
+		fl: 'flame', flame: 'flame',
+		pe: 'person', person: 'person', user: 'person',
+		ge: 'gear', gear: 'gear',
+		st: 'star', star: 'star',
+		sk: 'skull', skull: 'skull',
+		lt: 'bolt', bolt: 'bolt', lightning: 'bolt'
+	  };
+	  key = alias[key] || key;
 
-    // ===== Right badge renderer — supports data-URL images or keyword icons =====
-    function renderIconInline(storyIcon){
-      const s = String(storyIcon||'').trim();
-      if (!s) return '<div class="badge right">'+iconSVG('lock')+'</div>'; // default lock
+	  // map canonical name → Bootstrap Icons class
+	  const ICON_MAP = {
+		flame: 'bi-fire',
+		person: 'bi-person-fill',
+		gear: 'bi-gear-fill',
+		star: 'bi-star-fill',
+		skull: 'bi-skull',
+		bolt: 'bi-lightning-charge-fill'
+	  };
 
-      // If the sheet stores a data URL image, show it
-      if (s.startsWith('data:image')) {
-        return '<div class="badge right"><img alt="" src="'+s+'" style="width:100%;height:100%;object-fit:contain"></div>';
-      }
+	  const cls = ICON_MAP[key];
+	  if (!cls) return ''; // no fallback letters if you prefer nothing
 
-      // Otherwise map common names to your inline SVG set
-      const key = s.toLowerCase();
-      const known = ['lock','glass','gear','star','skull','bolt','book'];
-      if (known.includes(key)) {
-        return '<div class="badge right">'+iconSVG(key)+'</div>';
-      }
+	  // styled circular badge container with the icon inside
+	  return `<span class="story-icon"><i class="bi ${cls}" aria-hidden="true"></i></span>`;
+	}
 
-      // Fallback: show first letter(s)
-      return '<div class="badge right" title="'+escapeAttr(s)+'"'
-           + ' style="font-weight:900;font-size:14px;color:#3c2a1a;">'
-           + escapeHtml(s.slice(0,2).toUpperCase())
-           + '</div>';
-    }
 
     // ===== Corner ornament SVG =====
     function ornSvg(){
