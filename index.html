@@ -174,12 +174,59 @@
     }
 
     /* Search */
-    function doSearch(){
-      var q=document.getElementById('q').value;
-      document.getElementById('results').innerHTML='Searching...';
-      google.script.run.withSuccessHandler(render).withFailureHandler(function(e){alert(e.message);}).searchDatabase({q:q,page:1});
+  // Replace this with your actual Google Apps Script Web App URL
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzKn1B2PSeTgpEsRQJ_G4UJQg2YsbRAGOQBGc1US_krWLwCNWalMblPIpAvq2pmM27t0A/exec';
+
+async function doSearch() {
+  const q = document.getElementById('q').value.trim();
+  const results = document.getElementById('results');
+
+  // Quick validation
+  if (!q) {
+    results.innerHTML = '<p>Please enter a search term.</p>';
+    return;
+  }
+
+  results.innerHTML = '<p><em>Searching...</em></p>';
+
+  try {
+    // Build full request URL
+    const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=1&_=${Date.now()}`;
+    const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+
+    // Network / server status check
+    if (!res.ok) throw new Error(`Server returned ${res.status} ${res.statusText}`);
+
+    // Attempt to parse JSON
+    const payload = await res.json();
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('Unexpected response format (not JSON)');
     }
-    document.getElementById('btnSearch').onclick=doSearch;
+
+    // Defensive: ensure render gets the right shape
+    if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
+      console.warn('Response missing headers/rows, adapting…');
+      const headers = Object.keys(payload.data?.[0] || {});
+      const rows = (payload.data || []).map(obj => headers.map(h => obj[h] ?? ''));
+      render({ headers, rows });
+      return;
+    }
+
+    // Pass to your existing render() function
+    render(payload);
+
+  } catch (err) {
+    console.error(err);
+    results.innerHTML = `
+      <p style="color:#900;">Search failed: ${err.message}</p>
+      <p><small>Check your internet connection or verify the GAS_URL.</small></p>
+    `;
+  }
+}
+
+
+  document.getElementById('btnSearch').onclick = doSearch;
+
 
     /* Results render */
     function render(payload){
