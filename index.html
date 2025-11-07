@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pulp Alley Card Lookup</title>
-
+  <title>Pulp Alley Fortune Card Lookup</title>
+  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
   <style>
     /* --- Page + Typography --- */
     body { background:#d6c5a0; margin:0; font-family:Georgia,"Times New Roman",serif; }
@@ -121,7 +121,7 @@
     <h1>Pulp Alley Fortune Card Lookup</h1>
     <div class="bar">
       <input id="q" type="search" placeholder="Search by ID or Name..." />
-      <button id="btnSearch">Search</button>
+      <button id="btnSearch" type="button">Search</button>
     </div>
     <div id="results" class="cards"></div>
   </div>
@@ -130,7 +130,7 @@
   <div class="handHeader">
     <div class="handTitle">Hand: <span id="handCount">0</span></div>
     <div class="handControls">
-      <button id="btnClearHand">Clear Hand</button>
+      <button id="btnClearHand" type="button">Clear Hand</button>
     </div>
   </div>
   <div id="hand" class="handGrid"></div>
@@ -141,16 +141,29 @@
       <h3 id="confirmTitle" class="modalTitle">Remove card?</h3>
       <p class="modalMsg">This card will be removed from your hand.</p>
       <div class="modalBtns">
-        <button id="confirmYes" class="btnDanger">Remove</button>
-        <button id="confirmNo">Cancel</button>
+        <button id="confirmYes" class="btnDanger" type="button">Remove</button>
+        <button id="confirmNo" type="button">Cancel</button>
       </div>
     </div>
   </div>
 
   <script>
+    // ===== CONFIG =====
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
 
-    /* Inline SVG Icon Set (includes enamel coin variants) */
+    // ===== JSONP helper (for CORS-free Apps Script calls) =====
+    function jsonp(url){
+      return new Promise((resolve, reject) => {
+        const cb = 'cb_' + Math.random().toString(36).slice(2);
+        const s = document.createElement('script');
+        window[cb] = (data) => { resolve(data); delete window[cb]; s.remove(); };
+        s.onerror = () => { reject(new Error('JSONP request failed')); delete window[cb]; s.remove(); };
+        s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
+        document.body.appendChild(s);
+      });
+    }
+
+    // ===== Inline SVG Icon Set (includes enamel coin variants) =====
     function iconSVG(name){
       const key = String(name||'').trim().toLowerCase();
       const uid = Math.random().toString(36).slice(2, 8); // unique per call
@@ -221,208 +234,132 @@
       }
     }
 
-	// === Live search via Apps Script JSONP ===
-	async function doSearch(page = 1){
-	  const q = document.getElementById('q').value.trim();
-	  const res = document.getElementById('results');
+    // ===== Right badge renderer — supports data-URL images or keyword icons =====
+    function renderIconInline(storyIcon){
+      const s = String(storyIcon||'').trim();
+      if (!s) return '<div class="badge right">'+iconSVG('lock')+'</div>'; // default lock
 
-	  if (!q) { res.innerHTML = '<p>Please enter a search term.</p>'; return; }
-	  res.innerHTML = '<p><em>Searching…</em></p>';
+      // If the sheet stores a data URL image, show it
+      if (s.startsWith('data:image')) {
+        return '<div class="badge right"><img alt="" src="'+s+'" style="width:100%;height:100%;object-fit:contain"></div>';
+      }
 
-	  try {
-		const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=${page}&_=${Date.now()}`;
-		const payload = await jsonp(url);   // uses the jsonp() helper already in the file
+      // Otherwise map common names to your inline SVG set
+      const key = s.toLowerCase();
+      const known = ['lock','glass','gear','star','skull','bolt','book'];
+      if (known.includes(key)) {
+        return '<div class="badge right">'+iconSVG(key)+'</div>';
+      }
 
-		// Normalize if backend returns objects instead of {headers,rows}
-		if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
-		  const list = Array.isArray(payload?.data) ? payload.data : [];
-		  const headers = list.length ? Object.keys(list[0]) : [];
-		  const rows = list.map(o => headers.map(h => o[h] ?? ''));
-		  render({ headers, rows });
-		} else {
-		  render(payload); // expected shape from your Apps Script
-		}
-	  } catch (e) {
-		console.error(e);
-		res.innerHTML = `<p style="color:#900;">Search failed: ${e.message}</p>`;
-	  }
-	}
+      // Fallback: show first letter(s)
+      return '<div class="badge right" title="'+escapeAttr(s)+'"'
+           + ' style="font-weight:900;font-size:14px;color:#3c2a1a;">'
+           + escapeHtml(s.slice(0,2).toUpperCase())
+           + '</div>';
+    }
 
-	// Wire up UI
-	document.getElementById('btnSearch').onclick = () => doSearch(1);
-	document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(1); });
+    // ===== Corner ornament SVG =====
+    function ornSvg(){
+      return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+           + '<path fill="#4c2b16" d="M0,0 L64,0 L64,8 C44,8 20,24 8,40 L0,40 Z" opacity=".85"/></svg>';
+    }
 
-	// Optional: auto-search on load (comment out if not wanted)
-	// doSearch(1);
+    // ===== Divider SVG with three skull tiles =====
+    function skullDividerSepia(){
+      return '<svg viewBox="0 0 300 36" xmlns="http://www.w3.org/2000/svg">'
+           + '<g stroke="#3c2a1a" stroke-width="2" stroke-linecap="round" fill="none">'
+           + '<path d="M8 18 H95"/><path d="M205 18 H292"/></g>'
+           + '<rect x="110" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+           + '<rect x="138" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+           + '<rect x="166" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+           + '<defs><g id="s">'
+           + '<path d="M12,5 c5,0 9,3.5 9,8 c0,3 -1.5 4.5 -3.5 5.4 v2.2 h-11 v-2.2 C4.5,17.5 3,16 3,13 C3,8.5 7,5 12,5 z" fill="#f7f2e3" stroke="#3c2a1a" stroke-width="0.75"/>'
+           + '<ellipse cx="9" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
+           + '<ellipse cx="15" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
+           + '<path d="M12 14 l-1.5 2.2 h3 z" fill="#3c2a1a"/>'
+           + '<rect x="8" y="19.2" width="8" height="3.2" rx="0.8" fill="#3c2a1a"/></g></defs>'
+           + '<use href="#s" x="110" y="6"/><use href="#s" x="138" y="6"/><use href="#s" x="166" y="6"/></svg>';
+    }
 
-    const headers = ["ID","Name","Type","Challenge","Skills","Flavor","Notes","Icon"];
-    const rows = [
-      ["F-01","Perilous Ruins","Fortune","2 Successes","Finesse • Cunning","“Watch your step…”","—","glass"],
-      ["F-02","Rusty Lock","Fortune","3 Successes","Cunning • Might","“Old iron, older secrets.”","—","lock"]
-    ];
-    document.getElementById('btnSearch').addEventListener('click', () => {
-      render({ headers, rows });
-    });
+    // ===== Text helpers =====
+    function escapeHtml(s){
+      return String(s)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+    function nl2br(s){ return String(s).replace(/\r?\n/g,'<br>'); }
 
-    /* ID → Object map for quick lookup (populated in render) */
+    // ===== ID → Object map =====
     let idToObj = {};
 
-    /* Card HTML builder (matches GoogleIndex.html layout) */
-/* Card HTML */
-function cardHTML(o, opts){
-  opts = opts || {};
-  var name = o.Name || 'Untitled',
-      play = o.Play || '',
-      effect = o.Effect || '',
-      flavor = o.Flavor || '',
-      skills = o.Skills || '',
-      id = o.ID || '',
-      cardLimit = o.CardLimit || '',
-      chall = o.ChallengeValue || '',
-      storyIcon = o.StoryIcon || '';
+    // ===== Card HTML (exact visual parity with Google version) =====
+    function cardHTML(o, opts){
+      opts = opts || {};
+      var name = o.Name || 'Untitled',
+          play = o.Play || '',
+          effect = o.Effect || '',
+          flavor = o.Flavor || '',
+          skills = o.Skills || '',
+          id = o.ID || '',
+          cardLimit = o.CardLimit || '',
+          chall = o.ChallengeValue || '',
+          storyIcon = o.StoryIcon || '';
 
-  var html = '<div class="card" data-id="'+escapeAttr(id)+'">'
-    + '<div class="corner tl">'+ornSvg()+'</div>'
-    + '<div class="corner tr">'+ornSvg()+'</div>'
-    + '<div class="corner br">'+ornSvg()+'</div>'
-    + '<div class="corner bl">'+ornSvg()+'</div>';
+      var html = '<div class="card" data-id="'+escapeAttr(id)+'">'
+        + '<div class="corner tl">'+ornSvg()+'</div>'
+        + '<div class="corner tr">'+ornSvg()+'</div>'
+        + '<div class="corner br">'+ornSvg()+'</div>'
+        + '<div class="corner bl">'+ornSvg()+'</div>';
 
-  // "X" remove button when rendering in the Hand
-  if (opts.isHand) {
-    const uidAttr = opts.uid ? ' data-uid="'+escapeAttr(opts.uid)+'"' : '';
-    html += '<button class="removeBtn"'+uidAttr+' data-id="'+escapeAttr(id)+'" title="Remove from hand">×</button>';
-  }
+      // "X" remove button when rendering in the Hand
+      if (opts.isHand) {
+        const uidAttr = opts.uid ? ' data-uid="'+escapeAttr(opts.uid)+'"' : '';
+        html += '<button class="removeBtn"'+uidAttr+' data-id="'+escapeAttr(id)+'" title="Remove from hand">×</button>';
+      }
 
-  if (opts.showAdd)
-    html += '<div class="actions"><button class="btn-add" data-id="'+escapeAttr(id)+'">+ Add to hand</button></div>';
+      if (opts.showAdd)
+        html += '<div class="actions"><button class="btn-add" data-id="'+escapeAttr(id)+'">+ Add to hand</button></div>';
 
-  html += '<div class="title">'+escapeHtml(name)+'</div>';
+      html += '<div class="title">'+escapeHtml(name)+'</div>';
 
-  if (play) {
-    const normalizedPlay = String(play).trim().toLowerCase();
-    const mustPlay = normalizedPlay === 'you must play immediately.';
-    const playStyle  = mustPlay ? 'color:#a00;font-weight:900;' : '';
-    const labelStyle = mustPlay ? 'color:#a00;' : '';
-    html += '<div class="row" style="'+playStyle+'"><span class="label" style="'+labelStyle+'">Play:</span> '+nl2br(escapeHtml(play))+'</div>';
-  }
-  if (effect)
-    html += '<div class="row"><span class="label">Effect:</span> '+nl2br(escapeHtml(effect))+'</div>';
+      if (play) {
+        const normalizedPlay = String(play).trim().toLowerCase();
+        const mustPlay = normalizedPlay === 'you must play immediately.';
+        const playStyle  = mustPlay ? 'color:#a00;font-weight:900;' : '';
+        const labelStyle = mustPlay ? 'color:#a00;' : '';
+        html += '<div class="row" style="'+playStyle+'"><span class="label" style="'+labelStyle+'">Play:</span> '+nl2br(escapeHtml(play))+'</div>';
+      }
+      if (effect)
+        html += '<div class="row"><span class="label">Effect:</span> '+nl2br(escapeHtml(effect))+'</div>';
 
-  if (flavor) {
-    let f = String(flavor).trim();
-    if (!/^["“].*["”]$/.test(f)) f = '"'+f+'"';
-    html += '<div class="flavor">'+escapeHtml(f)+'</div>';
-  }
+      if (flavor) {
+        let f = String(flavor).trim();
+        if (!/^["“].*["”]$/.test(f)) f = '"'+f+'"';
+        html += '<div class="flavor">'+escapeHtml(f)+'</div>';
+      }
 
-  html += '<div class="divider">'+skullDividerSepia()+'</div>';
-  html += '<div class="challengeHdr">Challenge</div>';
+      html += '<div class="divider">'+skullDividerSepia()+'</div>';
+      html += '<div class="challengeHdr">Challenge</div>';
 
-  if (skills)
-    html += '<div class="skills">'+escapeHtml(skills)+'</div>';
+      if (skills)
+        html += '<div class="skills">'+escapeHtml(skills)+'</div>';
 
-  html += '<div class="badge left">'+(chall ? escapeHtml(chall) : '—')+'</div>';
+      html += '<div class="badge left">'+(chall ? escapeHtml(chall) : '—')+'</div>';
+      html += renderIconInline(storyIcon); // right badge
+      html += '<div class="footer">#'+escapeHtml(id)+'/'+escapeHtml(cardLimit)+' • Pulp Alley © 2025</div>'
+           +  '</div>';
 
-  html += renderIconInline(storyIcon); // right badge
-
-  html += '<div class="footer">#'+escapeHtml(id)+'/'+escapeHtml(cardLimit)+' • Pulp Alley © 2025</div>'
-       +  '</div>';
-
-  return html;
-}
-      const showAdd = !!opts.showAdd;
-      const icon = iconSVG(o.Icon||'');
-      return `
-        <div class="card">
-          <div class="corner tl">${ornSvg()}</div>
-          <div class="corner tr">${ornSvg()}</div>
-          <div class="corner br">${ornSvg()}</div>
-          <div class="corner bl">${ornSvg()}</div>
-
-          <div class="title">${escapeHtml(o.Name||'')}</div>
-
-          <div class="row"><span class="label">Type:</span> ${escapeHtml(o.Type||'')}</div>
-          <div class="divider">${skullDividerSepia()}</div>
-          <div class="challengeHdr">${escapeHtml(o.Challenge||'')}</div>
-          <div class="skills">${escapeHtml(o.Skills||'')}</div>
-          ${o.Flavor ? `<div class="flavor">“${escapeHtml(o.Flavor)}”</div>` : ''}
-
-          <div class="badge left">${escapeHtml((o.ID||'').toString())}</div>
-          <div class="badge right">${icon||''}</div>
-
-          <div class="footer">${escapeHtml(o.Notes||'')}</div>
-
-          ${showAdd ? `<div class="actions"><button class="btn-add" data-id="${escapeAttr(o.ID)}">Add to Hand</button></div>` : ``}
-        </div>
-      `;
+      return html;
     }
-// Right badge renderer — supports data-URL images or keyword icons
-function renderIconInline(storyIcon){
-  const s = String(storyIcon||'').trim();
-  if (!s) return '<div class="badge right">'+iconSVG('lock')+'</div>'; // default lock
 
-  // If the sheet stores a data URL image, show it
-  if (s.startsWith('data:image')) {
-    return '<div class="badge right"><img alt="" src="'+s+'" style="width:100%;height:100%;object-fit:contain"></div>';
-  }
-
-  // Otherwise map common names to your inline SVG set
-  const key = s.toLowerCase();
-  const known = ['lock','glass','gear','star','skull','bolt','book'];
-  if (known.includes(key)) {
-    return '<div class="badge right">'+iconSVG(key)+'</div>';
-  }
-
-  // Fallback: show first letter(s)
-  return '<div class="badge right" title="'+escapeAttr(s)+'"'
-       + ' style="font-weight:900;font-size:14px;color:#3c2a1a;">'
-       + escapeHtml(s.slice(0,2).toUpperCase())
-       + '</div>';
-}
-
-// Corner ornament SVG (same as your Google page)
-function ornSvg(){
-  return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
-       + '<path fill="#4c2b16" d="M0,0 L64,0 L64,8 C44,8 20,24 8,40 L0,40 Z" opacity=".85"/></svg>';
-}
-
-// Divider SVG with three skull tiles
-function skullDividerSepia(){
-  return '<svg viewBox="0 0 300 36" xmlns="http://www.w3.org/2000/svg">'
-       + '<g stroke="#3c2a1a" stroke-width="2" stroke-linecap="round" fill="none">'
-       + '<path d="M8 18 H95"/><path d="M205 18 H292"/></g>'
-       + '<rect x="110" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
-       + '<rect x="138" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
-       + '<rect x="166" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
-       + '<defs><g id="s">'
-       + '<path d="M12,5 c5,0 9,3.5 9,8 c0,3 -1.5,4.5 -3.5,5.4 v2.2 h-11 v-2.2 C4.5,17.5 3,16 3,13 C3,8.5 7,5 12,5 z" fill="#f7f2e3" stroke="#3c2a1a" stroke-width="0.75"/>'
-       + '<ellipse cx="9" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
-       + '<ellipse cx="15" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
-       + '<path d="M12 14 l-1.5 2.2 h3 z" fill="#3c2a1a"/>'
-       + '<rect x="8" y="19.2" width="8" height="3.2" rx="0.8" fill="#3c2a1a"/></g></defs>'
-       + '<use href="#s" x="110" y="6"/><use href="#s" x="138" y="6"/><use href="#s" x="166" y="6"/></svg>';
-}
-
-// Your inline icon set (gear/star/skull/bolt/book/lock/glass…)
-function iconSVG(name){ /* keep the implementation you already have */ }
-
-// Text helpers
-function escapeHtml(s){
-  return String(s)
-   .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-}
-function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
-function nl2br(s){ return String(s).replace(/\r?\n/g,'<br>'); }
-
-    /* Render results payload (same structure as your GAS page) */
+    // ===== Render results payload =====
     function render(payload){
       const headers = payload.headers||[], rows = payload.rows||[];
       const resultsEl = document.getElementById('results');
       if(!rows.length){ resultsEl.innerHTML='<p>No cards found.</p>'; return; }
-      const objs = rows.map(r => {
-        const o = {}; headers.forEach((h,i)=> o[h]=r[i]); return o;
-      });
-      idToObj = {}; objs.forEach(o => idToObj[o.ID]=o);
+      const objs = rows.map(r => { const o = {}; headers.forEach((h,i)=> o[h]=r[i]); return o; });
+      idToObj = {}; objs.forEach(o => { if(o && o.ID!=null) idToObj[o.ID]=o; });
       resultsEl.innerHTML = objs.map(o => cardHTML(o,{showAdd:true})).join('');
       // wire add buttons
       resultsEl.querySelectorAll('.btn-add').forEach(btn => {
@@ -430,7 +367,33 @@ function nl2br(s){ return String(s).replace(/\r?\n/g,'<br>'); }
       });
     }
 
-    /* Hand management */
+    // ===== Live search via Apps Script JSONP =====
+    async function doSearch(page = 1){
+      const q = document.getElementById('q').value.trim();
+      const res = document.getElementById('results');
+
+      if (!q) { res.innerHTML = '<p>Please enter a search term.</p>'; return; }
+      res.innerHTML = '<p><em>Searching…</em></p>';
+
+      try {
+        const url = GAS_URL + '?mode=json&q=' + encodeURIComponent(q) + '&page=' + page + '&_=' + Date.now();
+        const payload = await jsonp(url);
+        // Expected shape: {headers:[...], rows:[...]}
+        if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
+          const list = Array.isArray(payload && payload.data) ? payload.data : [];
+          const headers = list.length ? Object.keys(list[0]) : [];
+          const rows = list.map(o => headers.map(h => o[h] ?? ''));
+          render({ headers, rows });
+        } else {
+          render(payload);
+        }
+      } catch (e) {
+        console.error(e);
+        res.innerHTML = '<p style="color:#900;">Search failed: ' + escapeHtml(e.message) + '</p>';
+      }
+    }
+
+    // ===== Hand management =====
     const handEl = document.getElementById('hand');
     const handCountEl = document.getElementById('handCount');
 
@@ -438,27 +401,21 @@ function nl2br(s){ return String(s).replace(/\r?\n/g,'<br>'); }
       const o = idToObj[id];
       if(!o) return;
       const wrapper = document.createElement('div');
-      wrapper.innerHTML = cardHTML(o);
+      wrapper.innerHTML = cardHTML(o, { isHand:true, uid:String(Math.random()).slice(2) });
       const card = wrapper.firstElementChild;
-      card.classList.add('hand');
-
-      // add remove button
-      const x = document.createElement('button');
-      x.className = 'removeBtn';
-      x.setAttribute('aria-label','Remove card');
-      x.textContent = '×';
-      x.addEventListener('click', () => confirmRemove(card));
-      card.appendChild(x);
-
       handEl.appendChild(card);
       updateHandCount();
+
+      // wire remove button for this card
+      const rm = card.querySelector('.removeBtn');
+      if (rm) rm.addEventListener('click', () => confirmRemove(card));
     }
 
     function updateHandCount(){
-      handCountEl.textContent = handEl.querySelectorAll('.card.hand').length;
+      handCountEl.textContent = handEl.querySelectorAll('.card').length;
     }
 
-    /* Confirm modal for removals */
+    // ===== Confirm modal for removals =====
     const modal = document.getElementById('confirm');
     const btnYes = document.getElementById('confirmYes');
     const btnNo = document.getElementById('confirmNo');
@@ -475,32 +432,26 @@ function nl2br(s){ return String(s).replace(/\r?\n/g,'<br>'); }
     function escClose(e){ if(e.key==='Escape') closeModal(); }
     function closeModal(){ modal.classList.remove('show'); pendingRemove=null; }
 
-    /* Utilities */
-    function escapeHtml(s){ return String(s||'')
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
-
-    /* Clear hand */
+    // ===== Clear hand =====
     document.getElementById('btnClearHand').addEventListener('click', () => {
       if(!handEl.firstChild) return;
-      // use the same modal for consistency
-      pendingRemove = 'ALL';
+      // Reuse modal to confirm
       document.getElementById('confirmTitle').textContent = 'Clear entire hand?';
       document.querySelector('#confirm .modalMsg').textContent = 'All cards will be removed from your hand.';
       modal.classList.add('show');
-      btnYes.onclick = () => { handEl.innerHTML=''; updateHandCount(); resetConfirmCopy(); closeModal(); };
-      btnNo.onclick  = () => { resetConfirmCopy(); closeModal(); };
-      function resetConfirmCopy(){
+      btnYes.onclick = () => { handEl.innerHTML=''; updateHandCount(); restoreConfirmText(); closeModal(); };
+      btnNo.onclick  = () => { restoreConfirmText(); closeModal(); };
+      modal.addEventListener('click', (e)=> { if(e.target===modal){ restoreConfirmText(); closeModal(); } }, { once:true });
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ restoreConfirmText(); closeModal(); } }, { once:true });
+      function restoreConfirmText(){
         document.getElementById('confirmTitle').textContent = 'Remove card?';
         document.querySelector('#confirm .modalMsg').textContent = 'This card will be removed from your hand.';
       }
-      modal.addEventListener('click', (e)=> { if(e.target===modal){ resetConfirmCopy(); closeModal(); } }, { once:true });
-      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ resetConfirmCopy(); closeModal(); } }, { once:true });
     });
 
-    /* Optional: auto-demo load */
-    render({ headers, rows });
+    // ===== Wire up search =====
+    document.getElementById('btnSearch').addEventListener('click', () => doSearch(1));
+    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(1); });
   </script>
 </body>
 </html>
