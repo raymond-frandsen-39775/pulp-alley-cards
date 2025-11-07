@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Pulp Alley Card Lookup</title>
 
-  <!-- Favicon (data URI to avoid 404) -->
+  <!-- Favicon as data URI to avoid 404 -->
   <link rel="icon" href="data:;base64,iVBORw0KGgo=">
 
   <style>
@@ -17,7 +17,6 @@
       --soft:#fff8ea;
     }
 
-    /* Page base */
     html,body{ height:100%; }
     body{
       margin:0;
@@ -103,7 +102,7 @@
       max-width:1000px;
       margin:20px auto 0;
       padding:12px;
-      background:rgba(246,237,217,.9); /* fixed .9, not 9 */
+      background:rgba(246,237,217,.9); /* fixed .9 */
       border:1px dashed var(--line);
       border-radius:10px;
     }
@@ -121,7 +120,7 @@
       line-height: 1.4;
       z-index: 1000;
       text-align: left;
-      box-shadow:0 2px 4px rgba(0,0,0,.25); /* fixed .25, not 25 */
+      box-shadow:0 2px 4px rgba(0,0,0,.25); /* fixed .25 */
     }
   </style>
 </head>
@@ -151,8 +150,8 @@
 
   <script>
     // ========= CONFIG =========
-    // Replace with your current /exec URL if it changes
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbzKn1B2PSeTgpEsRQJ_G4UJQg2YsbRAGOQBGc1US_krWLwCNWalMblPIpAvq2pmM27t0A/exec';
+    // Replace with your current /exec URL when you redeploy
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
 
     // ========= UTIL: JSONP loader (bypasses CORS) =========
     function jsonp(url) {
@@ -210,7 +209,6 @@
     }
 
     // ========= MINIMAL CARD TEMPLATE =========
-    // Customize fields as needed (Name, Type, etc.). Falls back if missing.
     function cardHTML(o, opts = {}) {
       const title = o.Name || o.Title || o.Card || `Card ${o.ID ?? ''}`;
       const subtitle = o.Type || o.Category || '';
@@ -220,7 +218,6 @@
         ? `<button type="button" onclick="addToHandById('${String(id).replace(/'/g, "\\'")}')">Add</button>`
         : '';
 
-      // You can expand with more fields if desired
       return `
         <div class="card">
           <h3>${escapeHTML(title)}</h3>
@@ -232,9 +229,9 @@
       `;
     }
 
-    // ========= ADD TO HAND (simple demo) =========
+    // ========= ADD TO HAND =========
     function addToHandById(id){
-      // FIXED spread bug: create a copy or a fallback object
+      // Create a copy or a fallback object
       const base = idToObj[id] ? { ...idToObj[id] } : { ID: id, Name: '(Unknown)' };
 
       const hand = document.getElementById('hand');
@@ -250,7 +247,7 @@
       handItems.appendChild(div);
     }
 
-    // ========= SEARCH =========
+    // ========= SEARCH (JSONP) =========
     async function doSearch(){
       const q = document.getElementById('q').value.trim();
       const results = document.getElementById('results');
@@ -265,6 +262,7 @@
       try {
         const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=1&_=${Date.now()}`;
         const payload = await jsonp(url); // JSONP to bypass CORS
+
         // Ensure shape {headers, rows}. If server returns {data:[...]}, adapt here:
         if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
           const list = Array.isArray(payload?.data) ? payload.data : [];
