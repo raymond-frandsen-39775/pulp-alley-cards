@@ -48,7 +48,10 @@
 		ge: 'gear', gear: 'gear',
 		st: 'star', star: 'star',
 		sk: 'skull', skull: 'skull',
-		lt: 'bolt', bolt: 'bolt', lightning: 'bolt'
+		lt: 'bolt', bolt: 'bolt', lightning: 'bolt',
+		gl: 'glass', glass: 'glass',
+		lo: 'lock', lock: 'lock'
+
 	  };
 	  key = alias[key] || key;
 
@@ -58,7 +61,9 @@
 		gear: 'bi-gear-fill',
 		star: 'bi-star-fill',
 		skull: 'bi-skull',
-		bolt: 'bi-lightning-charge-fill'
+		bolt: 'bi-lightning-charge-fill',
+		glass: 'bi-search',
+		lock: 'bi-lock-fill'
 	  };
 
 	  const cls = ICON_MAP[key];
