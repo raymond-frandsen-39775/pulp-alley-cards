@@ -1,129 +1,131 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Pulp Alley Fortune Card Lookup</title>
-<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pulp Alley Card Lookup</title>
+
   <style>
-  :root{
-    --bg:#cdbd98;
-    --bg-top:#cdbd98;
-    --bg-bottom:#e6d8bd;
-    --ink:#2d2010;
-    --brown:#6f5b33;
-    --paper:#f6edd9;
-    --paper-dots:#eadfca;
-    --line:#ab9472;
-    --shadow:rgba(0,0,0,.35);
-  }
-  html,body{height:100%;}
-  body{
-    margin:0;
-    font-family:Georgia,"Times New Roman",serif;
-    color:var(--ink);
-    background:
-      radial-gradient(ellipse at center, rgba(0,0,0,.07), rgba(0,0,0,0) 70%) 50% -120px/120% 260px no-repeat,
-      linear-gradient(var(--bg-top),var(--bg-bottom));
-  }
-  .wrap{max-width:1100px;margin:26px auto 96px;padding:0 16px;text-align:center;}
-  h1{
-    font-family:"Copperplate",Georgia,serif;
-    font-size:34px;
-    margin:0 0 14px;
-    letter-spacing:.4px;
-    text-shadow:0 1px 0 #fff8;
-  }
-  .bar{
-    display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0 18px;flex-wrap:wrap;
-  }
-  input[type="search"]{
-    width:60%;min-width:300px;padding:12px 12px;font-size:16px;border:1px solid #b9a37f;border-radius:6px;background:#fff;box-shadow:inset 0 1px 2px rgba(0,0,0,.08);
-  }
-  button{
-    padding:10px 14px;font-size:16px;cursor:pointer;border:1px solid #b9a37f;border-radius:6px;background:#efe4ca;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(0,0,0,.08);
-  }
-  #results{
-    max-width:760px;margin:18px auto 0;padding:0 0 40px;
-  }
+    /* --- Page + Typography --- */
+    body { background:#d6c5a0; margin:0; font-family:Georgia,"Times New Roman",serif; }
+    .wrap { max-width:1100px; margin:24px auto; padding:0 16px 96px; text-align:center; }
+    h1 { font-family:"Copperplate",Georgia,serif; font-size:26px; margin:0 0 12px; }
+    .bar { display:flex; gap:8px; justify-content:center; margin-bottom:16px; }
+    input[type="search"]{ width:60%; min-width:280px; padding:10px 12px; font-size:16px; border:1px solid #b9a37f; border-radius:6px; }
+    button{ padding:10px 14px; font-size:16px; cursor:pointer; border:1px solid #b9a37f; border-radius:6px; background:#f6edd9; }
 
-  /* Card shell */
-  .card{
-    width:540px;max-width:92%;
-    margin:22px auto;
-    position:relative;
-    background:
-      radial-gradient(circle at 20px 20px, rgba(0,0,0,.08), transparent 22px) top left/100% 100% no-repeat,
-      radial-gradient(circle at calc(100% - 20px) 20px, rgba(0,0,0,.08), transparent 22px) top right/100% 100% no-repeat,
-      radial-gradient(circle at 20px calc(100% - 20px), rgba(0,0,0,.08), transparent 22px) bottom left/100% 100% no-repeat,
-      radial-gradient(circle at calc(100% - 20px) calc(100% - 20px), rgba(0,0,0,.08), transparent 22px) bottom right/100% 100% no-repeat,
-      radial-gradient(#efeadb 1.5px, transparent 1.6px) 0 0/6px 6px,
-      linear-gradient(#f7efdc,#efe4ca);
-    border-radius:10px;
-    border:1px solid #c0ad88;
-    box-shadow:0 10px 26px var(--shadow), 0 1px 0 #fff inset;
-    padding:22px 22px 14px;
-  }
-  /* tiny rounded-corner “nicks” */
-  .card::before, .card::after{
-    content:"";position:absolute;width:22px;height:22px;background:linear-gradient(135deg, #9b7e55 0 50%, transparent 51%);bottom:0;left:0;border-bottom-left-radius:6px;opacity:.9;
-    clip-path:polygon(0 0,100% 0,0 100%);
-  }
-  .card::after{left:auto;right:0;transform:scaleX(-1);}
+    /* --- Cards Grid --- */
+    .cards{ display:flex; flex-wrap:wrap; gap:16px; justify-content:center; }
 
-  .title{
-    text-align:center;font-size:22px;margin:0 0 10px;font-weight:700;text-shadow:0 1px 0 #fff7;
-  }
+    /* --- Card --- */
+    .card{
+      width:300px; position:relative; text-align:left; color:#1a0f08;
+      background:#f8f0db; border:2px solid #4c2b16; border-radius:8px;
+      box-shadow:0 4px 10px rgba(0,0,0,.35); padding:14px 16px 44px;
+    }
+    .card:before{
+      content:""; position:absolute; inset:0; pointer-events:none; border-radius:6px;
+      background-image: radial-gradient(#f6e9c6 1px,transparent 1px), radial-gradient(#f6e9c6 1px,transparent 1px);
+      background-position:0 0,10px 10px; background-size:20px 20px; opacity:.45; z-index:0;
+    }
 
-  .addBtn{
-    position:absolute;top:8px;right:10px;
-    font-size:12px;background:#f6edd9;border:1px solid #b9a37f;border-radius:12px;padding:5px 8px;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(0,0,0,.1);cursor:pointer;
-  }
+    /* --- Corner ornaments --- */
+    .corner{ position:absolute; width:28px; height:28px; opacity:.9; }
+    .corner.tl{ left:-2px; top:-2px; }
+    .corner.tr{ right:-2px; top:-2px; transform:rotate(90deg); }
+    .corner.br{ right:-2px; bottom:-2px; transform:rotate(180deg); }
+    .corner.bl{ left:-2px; bottom:-2px; transform:rotate(270deg); }
 
-  .line{height:1px;background:linear-gradient(90deg, transparent 0 6%, #b2996e 6% 94%, transparent 94%);margin:10px 0;}
+    /* --- Card text blocks --- */
+    .title{ position:relative; z-index:1; font-family:"Copperplate",Georgia,serif; text-align:center; font-size:22px; font-weight:900; margin:2px 0 8px; }
+    .row{ position:relative; z-index:1; margin:6px 0; }
+    .label{ font-weight:900; }
+    .flavor{ position:relative; z-index:1; text-align:center; font-style:italic; margin:10px 0 6px; }
 
-  .play, .effect, .flavor, .challengeBlk{ text-align:center; }
-  .play b, .effect b{ font-weight:700; }
-  .flavor{ font-style:italic; margin:6px 0 4px; opacity:.9; }
+    /* --- Divider --- */
+    .divider{ display:flex; justify-content:center; align-items:center; margin:10px 0; }
+    .divider svg{ width:100%; height:auto; max-width:calc(300px - 24px); display:block; }
 
-  .icons{
-    display:flex;justify-content:center;gap:8px;margin:10px 0 8px;
-  }
-  .skull{ width:20px;height:20px; }
+    /* --- Challenge / Skills --- */
+    .challengeHdr{ position:relative; z-index:1; text-align:center; font-weight:900; font-size:18px; margin:2px 0; }
+    .skills{ position:relative; z-index:1; text-align:center; font-weight:700; font-size:16px; margin-top:2px; }
 
-  .challengeBlk .label{ display:block; font-weight:700; margin-top:6px; }
-  .subtle{ opacity:.85; }
+    /* --- Badges --- */
+    .badge{
+      position:absolute; bottom:6px; width:40px; height:40px; border-radius:50%;
+      background:#e9ddc1; border:2px solid #9d8a62; display:flex; align-items:center; justify-content:center;
+      font-weight:900; color:#22150c; box-shadow:0 2px 4px rgba(0,0,0,.25); z-index:2;
+    }
+    .badge.left{ left:8px; }
 
-  .footer{
-    display:flex;justify-content:space-between;align-items:center;margin-top:8px;
-  }
-  .coin{ width:30px;height:30px;border-radius:50%;background:#efe3c3;border:1px solid #b79a6a;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(0,0,0,.15);font-weight:700; }
-  .lock{ width:28px;height:28px;opacity:.9; }
+    /* Right badge uses inline SVG enamel coin */
+    .badge.right{
+      right:8px;
+      width:40px; height:40px; border-radius:50%;
+      border:2px solid #9d8a62;
+      overflow:hidden; display:flex; align-items:center; justify-content:center;
+      box-shadow:0 2px 4px rgba(0,0,0,.25);
+    }
+    .badge.right svg{ width:100%; height:100%; display:block; }
 
-  /* Copyright badge */
-  .copyright{
-    position:fixed;top:8px;left:12px;font-size:12px;color:var(--ink);
-    background:rgba(255,255,255,.6);padding:6px 10px;border-radius:4px;line-height:1.35;z-index:1000;
-    box-shadow:0 2px 4px rgba(0,0,0,.25);
-  }
-</style>
+    .footer{ position:absolute; left:0; right:0; bottom:12px; text-align:center; font-size:12px; color:#3c2a1a; z-index:1; }
+
+    .actions{ position:absolute; top:6px; right:6px; z-index:3; display:flex; gap:6px; }
+    .btn-add{ font-size:12px; padding:6px 8px; border-radius:6px; border:1px solid #b9a37f; background:#fff4cf; cursor:pointer; }
+
+    /* --- Hand header --- */
+    .handHeader{
+      position:sticky; bottom:0; background:rgba(248,240,219,.98); border-top:2px solid #4c2b16;
+      box-shadow:0 -6px 16px rgba(0,0,0,.25); padding:10px 12px; display:flex; align-items:center; gap:10px; justify-content:space-between; z-index:10;
+    }
+    .handTitle{ font-weight:900; font-family:"Copperplate",Georgia,serif; }
+    .handControls{ display:flex; gap:8px; align-items:center; }
+
+    /* --- Hand grid (flex wrap to multiple rows) --- */
+    .handGrid{
+      display:flex; flex-wrap:wrap; justify-content:center; align-items:flex-start;
+      gap:16px; padding:12px 12px 18px; background:rgba(246,237,217,.9); border-bottom:2px solid #4c2b16;
+    }
+
+    /* --- Hand card tweaks --- */
+    .card.hand{ width:220px; box-sizing:border-box; padding:10px 12px 48px; position:relative; flex:0 0 auto; }
+    .card.hand .title{ font-size:18px; margin-bottom:6px; }
+    .card.hand .badge{ width:34px; height:34px; bottom:6px; }
+    .card.hand .footer{ font-size:11px; }
+
+    /* Remove (X) button for hand cards */
+    .removeBtn{
+      position:absolute; top:6px; right:6px; width:26px; height:26px; border-radius:50%;
+      border:1px solid #8b734f; background:#fff0d0; font-weight:900; font-size:16px; color:#3c2a1a;
+      display:flex; align-items:center; justify-content:center; line-height:1; cursor:pointer; z-index:4;
+    }
+    .removeBtn:hover{ background:#ffe6bd; }
+
+    /* --- Confirm Modal --- */
+    .modal { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.45); }
+    .modal.show { display:flex; }
+    .modalBox{
+      width:min(420px, 92vw); background:#f8f0db; border:2px solid #4c2b16; border-radius:10px;
+      box-shadow:0 10px 30px rgba(0,0,0,.35); padding:18px 20px; text-align:center; color:#1a0f08;
+    }
+    .modalTitle{ font-family:"Copperplate",Georgia,serif; font-size:18px; font-weight:900; margin:0 0 6px; }
+    .modalMsg{ margin:4px 0 12px; }
+    .modalBtns{ display:flex; gap:10px; justify-content:center; }
+    .modalBtns button{ padding:8px 16px; cursor:pointer; border-radius:8px; border:1px solid #b9a37f; background:#fff4cf; font-weight:700; }
+    .modalBtns button.btnDanger{ background:#e9d2b1; border-color:#a68458; }
+    .modalBtns button:focus{ outline:2px solid #8b734f; outline-offset:2px; }
+  </style>
 </head>
 <body>
-  <div class="copyright">
-    App Copyright 2025 - Ray Frandsen<br>
-    Cards Copyright 2025 - Pulp Alley
-  </div>
-
   <div class="wrap">
     <h1>Pulp Alley Fortune Card Lookup</h1>
     <div class="bar">
       <input id="q" type="search" placeholder="Search by ID or Name..." />
-      <button id="btnSearch" type="button">Search</button>
+      <button id="btnSearch">Search</button>
     </div>
-
-    <div id="results">Type a query and click Search…</div>
+    <div id="results" class="cards"></div>
   </div>
-  
+
   <!-- Sticky hand header + grid -->
   <div class="handHeader">
     <div class="handTitle">Hand: <span id="handCount">0</span></div>
@@ -144,9 +146,10 @@
       </div>
     </div>
   </div>
-<script>
-  // ---------- CONFIG ----------
-  const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
+
+  <script>
+    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
+
     /* Corner ornament */
     function ornSvg(){
       return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path fill="#4c2b16" d="M0,0 L64,0 L64,8 C44,8 20,24 8,40 L0,40 Z" opacity=".85"/></svg>';
@@ -236,29 +239,54 @@
         default: return '';
       }
     }
-  // ---------- JSONP helper ----------
-  function jsonp(url){
-    return new Promise((resolve,reject)=>{
-      const cb='cb_'+Math.random().toString(36).slice(2);
-      const s=document.createElement('script');
-      window[cb]=(data)=>{ resolve(data); delete window[cb]; s.remove(); };
-      s.onerror=(ev)=>{ console.error('JSONP failed for', s.src); reject(new Error('JSONP request failed')); delete window[cb]; s.remove(); };
-      s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
-      document.body.appendChild(s);
+
+	// === Live search via Apps Script JSONP ===
+	async function doSearch(page = 1){
+	  const q = document.getElementById('q').value.trim();
+	  const res = document.getElementById('results');
+
+	  if (!q) { res.innerHTML = '<p>Please enter a search term.</p>'; return; }
+	  res.innerHTML = '<p><em>Searching…</em></p>';
+
+	  try {
+		const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=${page}&_=${Date.now()}`;
+		const payload = await jsonp(url);   // uses the jsonp() helper already in the file
+
+		// Normalize if backend returns objects instead of {headers,rows}
+		if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
+		  const list = Array.isArray(payload?.data) ? payload.data : [];
+		  const headers = list.length ? Object.keys(list[0]) : [];
+		  const rows = list.map(o => headers.map(h => o[h] ?? ''));
+		  render({ headers, rows });
+		} else {
+		  render(payload); // expected shape from your Apps Script
+		}
+	  } catch (e) {
+		console.error(e);
+		res.innerHTML = `<p style="color:#900;">Search failed: ${e.message}</p>`;
+	  }
+	}
+
+	// Wire up UI
+	document.getElementById('btnSearch').onclick = () => doSearch(1);
+	document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(1); });
+
+	// Optional: auto-search on load (comment out if not wanted)
+	// doSearch(1);
+
+    const headers = ["ID","Name","Type","Challenge","Skills","Flavor","Notes","Icon"];
+    const rows = [
+      ["F-01","Perilous Ruins","Fortune","2 Successes","Finesse • Cunning","“Watch your step…”","—","glass"],
+      ["F-02","Rusty Lock","Fortune","3 Successes","Cunning • Might","“Old iron, older secrets.”","—","lock"]
+    ];
+    document.getElementById('btnSearch').addEventListener('click', () => {
+      render({ headers, rows });
     });
-  }
 
-  // ---------- RENDER ----------
-  function render(payload){
-    const headers = payload.headers||[];
-    const rows = payload.rows||[];
-    const res = document.getElementById('results');
-    if(!rows.length){ res.innerHTML='<p>No cards found.</p>'; return; }
-    const objs = rows.map(r=>{ const o={}; headers.forEach((h,i)=>o[h]=r[i]); return o; });
-    res.innerHTML = objs.map(o=> cardHTML(o)).join('');
-  }
+    /* ID → Object map for quick lookup (populated in render) */
+    let idToObj = {};
 
-  // ---------- CARD ----------
+    /* Card HTML builder (matches GoogleIndex.html layout) */
     function cardHTML(o, opts={}){
       const showAdd = !!opts.showAdd;
       const icon = iconSVG(o.Icon||'');
@@ -287,52 +315,93 @@
       `;
     }
 
-  // ---------- SVG bits ----------
-  function skullSVG(){
-    return `<svg class="skull" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path fill="#5b4a2a" d="M12 3c4.2 0 7.5 2.9 7.5 6.9 0 2.6-1.4 4.7-3.7 5.9v2.2c0 .6-.5 1-1 1h-1.2c-.6 0-1-.5-1-1v-1h-1.2v1c0 .6-.4 1-1 1H9.2c-.6 0-1-.5-1-1v-2.2C6 14.6 4.5 12.5 4.5 9.9 4.5 5.9 7.8 3 12 3z"/>
-      <circle cx="9" cy="10" r="1.7" fill="#f6edd9"/>
-      <circle cx="15" cy="10" r="1.7" fill="#f6edd9"/>
-      <rect x="10.6" y="13.2" width="2.8" height="1.6" rx=".8" fill="#f6edd9"/>
-    </svg>`;
-  }
-  function lockSVG(){
-    return `<svg class="lock" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect x="6" y="10" width="12" height="10" rx="2" fill="#c5b089" stroke="#8e744e"/>
-      <path d="M8.5 10V8.2C8.5 6 10.4 4.2 12.6 4.2s4.1 1.8 4.1 4V10" fill="none" stroke="#8e744e" stroke-width="1.4"/>
-      <circle cx="12" cy="15" r="1.3" fill="#8e744e"/>
-    </svg>`;
-  }
-
-  // ---------- SEARCH ----------
-  async function doSearch(){
-    const q = document.getElementById('q').value.trim();
-    const res = document.getElementById('results');
-    if(!q){ res.innerHTML='<p>Please enter a search term.</p>'; return; }
-    res.innerHTML='<p><em>Searching…</em></p>';
-    try{
-      const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=1&_=${Date.now()}`;
-      const payload = await jsonp(url);
-      // normalize if backend returns object arrays
-      if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
-        const list = Array.isArray(payload?.data) ? payload.data : [];
-        const headers = list.length ? Object.keys(list[0]) : [];
-        const rows = list.map(o => headers.map(h => o[h] ?? ''));
-        render({headers,rows});
-      } else {
-        render(payload);
-      }
-    } catch(e){
-      console.error(e);
-      res.innerHTML = `<p style="color:#900;">Search failed: ${escapeHTML(e.message)}</p>`;
+    /* Render results payload (same structure as your GAS page) */
+    function render(payload){
+      const headers = payload.headers||[], rows = payload.rows||[];
+      const resultsEl = document.getElementById('results');
+      if(!rows.length){ resultsEl.innerHTML='<p>No cards found.</p>'; return; }
+      const objs = rows.map(r => {
+        const o = {}; headers.forEach((h,i)=> o[h]=r[i]); return o;
+      });
+      idToObj = {}; objs.forEach(o => idToObj[o.ID]=o);
+      resultsEl.innerHTML = objs.map(o => cardHTML(o,{showAdd:true})).join('');
+      // wire add buttons
+      resultsEl.querySelectorAll('.btn-add').forEach(btn => {
+        btn.addEventListener('click', () => addToHand(btn.getAttribute('data-id')));
+      });
     }
-  }
-  document.getElementById('btnSearch').onclick=doSearch;
-  document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
 
-  // ---------- helpers ----------
-  function escapeHTML(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-  function safe(v){return v==null?'':String(v);}
-</script>
+    /* Hand management */
+    const handEl = document.getElementById('hand');
+    const handCountEl = document.getElementById('handCount');
+
+    function addToHand(id){
+      const o = idToObj[id];
+      if(!o) return;
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = cardHTML(o);
+      const card = wrapper.firstElementChild;
+      card.classList.add('hand');
+
+      // add remove button
+      const x = document.createElement('button');
+      x.className = 'removeBtn';
+      x.setAttribute('aria-label','Remove card');
+      x.textContent = '×';
+      x.addEventListener('click', () => confirmRemove(card));
+      card.appendChild(x);
+
+      handEl.appendChild(card);
+      updateHandCount();
+    }
+
+    function updateHandCount(){
+      handCountEl.textContent = handEl.querySelectorAll('.card.hand').length;
+    }
+
+    /* Confirm modal for removals */
+    const modal = document.getElementById('confirm');
+    const btnYes = document.getElementById('confirmYes');
+    const btnNo = document.getElementById('confirmNo');
+    let pendingRemove = null;
+
+    function confirmRemove(card){
+      pendingRemove = card;
+      modal.classList.add('show');
+      btnYes.onclick = () => { if(pendingRemove){ pendingRemove.remove(); updateHandCount(); } closeModal(); };
+      btnNo.onclick  = closeModal;
+      modal.addEventListener('click', (e)=> { if(e.target===modal) closeModal(); }, { once:true });
+      window.addEventListener('keydown', escClose, { once:true });
+    }
+    function escClose(e){ if(e.key==='Escape') closeModal(); }
+    function closeModal(){ modal.classList.remove('show'); pendingRemove=null; }
+
+    /* Utilities */
+    function escapeHtml(s){ return String(s||'')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+    function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+
+    /* Clear hand */
+    document.getElementById('btnClearHand').addEventListener('click', () => {
+      if(!handEl.firstChild) return;
+      // use the same modal for consistency
+      pendingRemove = 'ALL';
+      document.getElementById('confirmTitle').textContent = 'Clear entire hand?';
+      document.querySelector('#confirm .modalMsg').textContent = 'All cards will be removed from your hand.';
+      modal.classList.add('show');
+      btnYes.onclick = () => { handEl.innerHTML=''; updateHandCount(); resetConfirmCopy(); closeModal(); };
+      btnNo.onclick  = () => { resetConfirmCopy(); closeModal(); };
+      function resetConfirmCopy(){
+        document.getElementById('confirmTitle').textContent = 'Remove card?';
+        document.querySelector('#confirm .modalMsg').textContent = 'This card will be removed from your hand.';
+      }
+      modal.addEventListener('click', (e)=> { if(e.target===modal){ resetConfirmCopy(); closeModal(); } }, { once:true });
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ resetConfirmCopy(); closeModal(); } }, { once:true });
+    });
+
+    /* Optional: auto-demo load */
+    render({ headers, rows });
+  </script>
 </body>
 </html>
