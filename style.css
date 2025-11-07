@@ -106,18 +106,30 @@
     .modalBtns button{ padding:8px 16px; cursor:pointer; border-radius:8px; border:1px solid #b9a37f; background:#fff4cf; font-weight:700; }
     .modalBtns button.btnDanger{ background:#e9d2b1; border-color:#a68458; }
     .modalBtns button:focus{ outline:2px solid #8b734f; outline-offset:2px; }
-.story-icon{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  width:36px; height:36px;
-  border-radius:50%;
-  background:#f6edd9;
-  border:1px solid rgba(0,0,0,.2);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.6);
-  margin-left:6px; /* match your existing layout */
-}
-.story-icon > i{
-  font-size:20px;
-  line-height:1;
-}
+	.card {
+	  position: relative; /* ensure positioned children anchor correctly */
+	}
+
+	/* icon badge positioning */
+	.story-icon {
+	  position: absolute;
+	  bottom: 6px;
+	  right: 6px;
+	  display: inline-flex;
+	  align-items: center;
+	  justify-content: center;
+	  width: 36px;
+	  height: 36px;
+	  border-radius: 50%;
+	  background: #f6edd9;
+	  border: 1px solid rgba(0,0,0,.3);
+	  box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
+	}
+
+	/* the icon itself */
+	.story-icon i {
+	  font-size: 20px;
+	  color: #5b4636; /* muted sepia tone */
+	  line-height: 1;
+	}
+

@@ -37,12 +37,11 @@
 	function renderIconInline(raw) {
 	  if (!raw) return '';
 
-	  // normalize: trim, lowercase, strip extension & symbols
+	  // normalize: lowercase, trim, strip extension
 	  let key = String(raw).trim().toLowerCase()
 		.replace(/\.(png|jpe?g|svg|webp)$/i, '')
 		.replace(/[^a-z0-9]+/g, '');
 
-	  // aliases (your two-letter codes → canonical)
 	  const alias = {
 		fl: 'flame', flame: 'flame',
 		pe: 'person', person: 'person', user: 'person',
@@ -53,7 +52,6 @@
 	  };
 	  key = alias[key] || key;
 
-	  // map canonical name → Bootstrap Icons class
 	  const ICON_MAP = {
 		flame: 'bi-fire',
 		person: 'bi-person-fill',
@@ -64,9 +62,9 @@
 	  };
 
 	  const cls = ICON_MAP[key];
-	  if (!cls) return ''; // no fallback letters if you prefer nothing
+	  if (!cls) return '';
 
-	  // styled circular badge container with the icon inside
+	  // positioned circular badge container
 	  return `<span class="story-icon"><i class="bi ${cls}" aria-hidden="true"></i></span>`;
 	}
 
