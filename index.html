@@ -1,398 +1,243 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Pulp Alley Card Lookup</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pulp Alley Fortune Card Lookup</title>
+<link rel="icon" href="data:;base64,iVBORw0KGgo=">
+<style>
+  :root{
+    --bg:#cdbd98;
+    --bg-top:#cdbd98;
+    --bg-bottom:#e6d8bd;
+    --ink:#2d2010;
+    --brown:#6f5b33;
+    --paper:#f6edd9;
+    --paper-dots:#eadfca;
+    --line:#ab9472;
+    --shadow:rgba(0,0,0,.35);
+  }
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:Georgia,"Times New Roman",serif;
+    color:var(--ink);
+    background:
+      radial-gradient(ellipse at center, rgba(0,0,0,.07), rgba(0,0,0,0) 70%) 50% -120px/120% 260px no-repeat,
+      linear-gradient(var(--bg-top),var(--bg-bottom));
+  }
+  .wrap{max-width:1100px;margin:26px auto 96px;padding:0 16px;text-align:center;}
+  h1{
+    font-family:"Copperplate",Georgia,serif;
+    font-size:34px;
+    margin:0 0 14px;
+    letter-spacing:.4px;
+    text-shadow:0 1px 0 #fff8;
+  }
+  .bar{
+    display:flex;gap:10px;justify-content:center;align-items:center;margin:8px 0 18px;flex-wrap:wrap;
+  }
+  input[type="search"]{
+    width:60%;min-width:300px;padding:12px 12px;font-size:16px;border:1px solid #b9a37f;border-radius:6px;background:#fff;box-shadow:inset 0 1px 2px rgba(0,0,0,.08);
+  }
+  button{
+    padding:10px 14px;font-size:16px;cursor:pointer;border:1px solid #b9a37f;border-radius:6px;background:#efe4ca;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(0,0,0,.08);
+  }
+  #results{
+    max-width:760px;margin:18px auto 0;padding:0 0 40px;
+  }
 
-  <!-- Favicon as data URI to avoid 404 -->
-  <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+  /* Card shell */
+  .card{
+    width:540px;max-width:92%;
+    margin:22px auto;
+    position:relative;
+    background:
+      radial-gradient(circle at 20px 20px, rgba(0,0,0,.08), transparent 22px) top left/100% 100% no-repeat,
+      radial-gradient(circle at calc(100% - 20px) 20px, rgba(0,0,0,.08), transparent 22px) top right/100% 100% no-repeat,
+      radial-gradient(circle at 20px calc(100% - 20px), rgba(0,0,0,.08), transparent 22px) bottom left/100% 100% no-repeat,
+      radial-gradient(circle at calc(100% - 20px) calc(100% - 20px), rgba(0,0,0,.08), transparent 22px) bottom right/100% 100% no-repeat,
+      radial-gradient(#efeadb 1.5px, transparent 1.6px) 0 0/6px 6px,
+      linear-gradient(#f7efdc,#efe4ca);
+    border-radius:10px;
+    border:1px solid #c0ad88;
+    box-shadow:0 10px 26px var(--shadow), 0 1px 0 #fff inset;
+    padding:22px 22px 14px;
+  }
+  /* tiny rounded-corner “nicks” */
+  .card::before, .card::after{
+    content:"";position:absolute;width:22px;height:22px;background:linear-gradient(135deg, #9b7e55 0 50%, transparent 51%);bottom:0;left:0;border-bottom-left-radius:6px;opacity:.9;
+    clip-path:polygon(0 0,100% 0,0 100%);
+  }
+  .card::after{left:auto;right:0;transform:scaleX(-1);}
 
-  <style>
-    :root{
-      --bg:#d6c5a0;
-      --paper:#f6edd9;
-      --ink:#3b2d12;
-      --line:#b9a37f;
-      --soft:#fff8ea;
-      --muted:#6a5832;
-    }
+  .title{
+    text-align:center;font-size:22px;margin:0 0 10px;font-weight:700;text-shadow:0 1px 0 #fff7;
+  }
 
-    html,body{ height:100%; }
-    body{
-      margin:0;
-      font-family: Georgia, "Times New Roman", serif;
-      background: var(--bg);
-      color: var(--ink);
-    }
+  .addBtn{
+    position:absolute;top:8px;right:10px;
+    font-size:12px;background:#f6edd9;border:1px solid #b9a37f;border-radius:12px;padding:5px 8px;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(0,0,0,.1);cursor:pointer;
+  }
 
-    .wrap{
-      max-width:1100px;
-      margin:24px auto 96px;
-      padding:0 16px;
-      text-align:center;
-    }
+  .line{height:1px;background:linear-gradient(90deg, transparent 0 6%, #b2996e 6% 94%, transparent 94%);margin:10px 0;}
 
-    h1{
-      font-family:"Copperplate",Georgia,serif;
-      font-size:26px;
-      margin:0 0 8px;
-      letter-spacing:.5px;
-    }
-    .sub{
-      margin:0 0 12px;
-      font-size:14px;
-      color:var(--muted);
-    }
+  .play, .effect, .flavor, .challengeBlk{ text-align:center; }
+  .play b, .effect b{ font-weight:700; }
+  .flavor{ font-style:italic; margin:6px 0 4px; opacity:.9; }
 
-    .bar{
-      display:flex;
-      gap:8px;
-      justify-content:center;
-      align-items:center;
-      margin:12px 0 16px;
-      flex-wrap:wrap;
-    }
+  .icons{
+    display:flex;justify-content:center;gap:8px;margin:10px 0 8px;
+  }
+  .skull{ width:20px;height:20px; }
 
-    input[type="search"]{
-      width:60%;
-      min-width:280px;
-      padding:10px 12px;
-      font-size:16px;
-      border:1px solid var(--line);
-      border-radius:6px;
-      background:#fff;
-    }
+  .challengeBlk .label{ display:block; font-weight:700; margin-top:6px; }
+  .subtle{ opacity:.85; }
 
-    button{
-      padding:10px 14px;
-      font-size:16px;
-      cursor:pointer;
-      border:1px solid var(--line);
-      border-radius:6px;
-      background: var(--paper);
-    }
+  .footer{
+    display:flex;justify-content:space-between;align-items:center;margin-top:8px;
+  }
+  .coin{ width:30px;height:30px;border-radius:50%;background:#efe3c3;border:1px solid #b79a6a;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 0 #fff inset,0 1px 2px rgba(0,0,0,.15);font-weight:700; }
+  .lock{ width:28px;height:28px;opacity:.9; }
 
-    /* Results shell */
-    #results{
-      text-align:left;
-      background: var(--soft);
-      padding:12px;
-      border-radius:8px;
-      max-width:1000px;
-      margin:16px auto 0;
-      border:1px solid rgba(0,0,0,.1);
-      min-height:64px;
-    }
-
-    /* Card list mirroring original GAS layout (paper card) */
-    .card{
-      background:#fff;
-      border:1px solid rgba(0,0,0,.08);
-      border-radius:12px;
-      padding:14px 14px 12px;
-      margin:12px 0;
-      box-shadow:0 2px 4px rgba(0,0,0,.12);
-    }
-    .cardHead{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      margin-bottom:8px;
-    }
-    .iconWrap{
-      width:48px; height:48px; flex:0 0 48px;
-      border-radius:50%;
-      background:#f2e7ce;
-      display:flex; align-items:center; justify-content:center;
-      overflow:hidden; border:1px solid #d4c4a5;
-    }
-    .iconWrap img{
-      max-width:100%; max-height:100%; display:block;
-      object-fit:contain;
-    }
-    .titleBox{
-      flex:1 1 auto;
-    }
-    .title{
-      margin:0;
-      font-size:18px;
-      line-height:1.2;
-    }
-    .meta{
-      font-size:13px;
-      opacity:.85;
-    }
-
-    .fields{
-      display:grid;
-      grid-template-columns: 1fr 1fr;
-      gap:8px 16px;
-      margin-top:6px;
-    }
-    .field{
-      background:#fff;
-      border:1px solid rgba(0,0,0,.05);
-      border-radius:8px;
-      padding:8px 10px;
-    }
-    .label{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin-bottom:4px;
-      letter-spacing:.2px;
-      text-transform:uppercase;
-    }
-    .val{ font-size:14px; white-space:pre-wrap; }
-
-    /* Full-width rows for long text */
-    .field.play,
-    .field.effect,
-    .field.flavor{
-      grid-column: 1 / -1;
-    }
-    .flavor .val{ font-style:italic; }
-
-    /* “Hand” area (optional) */
-    #hand{
-      max-width:1000px;
-      margin:20px auto 0;
-      padding:12px;
-      background:rgba(246,237,217,.9);
-      border:1px dashed var(--line);
-      border-radius:10px;
-    }
-
-    /* Top-left copyright */
-    .copyright{
-      position: fixed;
-      top: 8px;
-      left: 12px;
-      font-size: 12px;
-      color: var(--ink);
-      background: rgba(255,255,255,.6);
-      padding: 6px 10px;
-      border-radius: 4px;
-      line-height: 1.4;
-      z-index: 1000;
-      text-align: left;
-      box-shadow:0 2px 4px rgba(0,0,0,.25);
-    }
-
-    /* Responsive */
-    @media (max-width: 720px){
-      .fields{ grid-template-columns:1fr; }
-    }
-  </style>
+  /* Copyright badge */
+  .copyright{
+    position:fixed;top:8px;left:12px;font-size:12px;color:var(--ink);
+    background:rgba(255,255,255,.6);padding:6px 10px;border-radius:4px;line-height:1.35;z-index:1000;
+    box-shadow:0 2px 4px rgba(0,0,0,.25);
+  }
+</style>
 </head>
 <body>
-  <!-- Copyright overlay -->
   <div class="copyright">
     App Copyright 2025 - Ray Frandsen<br>
     Cards Copyright 2025 - Pulp Alley
   </div>
 
   <div class="wrap">
-    <h1>Pulp Alley Card Lookup</h1>
-    <p class="sub">Search by ID, name, skills, or effect text.</p>
-
+    <h1>Pulp Alley Fortune Card Lookup</h1>
     <div class="bar">
-      <input id="q" type="search" placeholder="Search cards…" />
+      <input id="q" type="search" placeholder="Lucky" />
       <button id="btnSearch" type="button">Search</button>
     </div>
 
     <div id="results">Type a query and click Search…</div>
-
-    <!-- Optional “hand” container -->
-    <div id="hand" hidden>
-      <strong>Your Hand</strong>
-      <div id="handItems"></div>
-    </div>
   </div>
 
-  <script>
-    // ========= CONFIG =========
-    // Replace with your current /exec URL when you redeploy
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
+<script>
+  // ---------- CONFIG ----------
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbzKn1B2PSeTgpEsRQJ_G4UJQg2YsbRAGOQBGc1US_krWLwCNWalMblPIpAvq2pmM27t0A/exec';
 
-    // ========= UTIL: JSONP loader (bypasses CORS) =========
-    function jsonp(url) {
-      return new Promise((resolve, reject) => {
-        const cb = 'cb_' + Math.random().toString(36).slice(2);
-        const s = document.createElement('script');
+  // ---------- JSONP helper ----------
+  function jsonp(url){
+    return new Promise((resolve,reject)=>{
+      const cb='cb_'+Math.random().toString(36).slice(2);
+      const s=document.createElement('script');
+      window[cb]=(data)=>{ resolve(data); delete window[cb]; s.remove(); };
+      s.onerror=(ev)=>{ console.error('JSONP failed for', s.src); reject(new Error('JSONP request failed')); delete window[cb]; s.remove(); };
+      s.src=url+(url.includes('?')?'&':'?')+'callback='+cb;
+      document.body.appendChild(s);
+    });
+  }
 
-        window[cb] = (data) => {
-          resolve(data);
-          delete window[cb];
-          s.remove();
-        };
+  // ---------- RENDER ----------
+  function render(payload){
+    const headers = payload.headers||[];
+    const rows = payload.rows||[];
+    const res = document.getElementById('results');
+    if(!rows.length){ res.innerHTML='<p>No cards found.</p>'; return; }
+    const objs = rows.map(r=>{ const o={}; headers.forEach((h,i)=>o[h]=r[i]); return o; });
+    res.innerHTML = objs.map(o=> cardHTML(o)).join('');
+  }
 
-        s.onerror = () => {
-          console.error('JSONP failed for', s.src);
-          reject(new Error('JSONP request failed'));
-          delete window[cb];
-          s.remove();
-        };
+  // ---------- CARD ----------
+  function cardHTML(o){
+    const name   = safe(o.Name);
+    const id     = safe(o.ID);
+    const play   = safe(o.Play);
+    const effect = safe(o.Effect);
+    const flavor = safe(o.Flavor);
+    const skills = safe(o.Skills);
+    const chall  = safe(o.ChallengeValue);
+    const limit  = safe(o.CardLimit);
 
-        s.src = url + (url.includes('?') ? '&' : '?') + 'callback=' + cb;
-        document.body.appendChild(s);
-      });
-    }
+    return `
+      <div class="card">
+        <button class="addBtn" onclick="alert('Added to hand: ${escapeHTML(name||('Card '+id))}')">+ Add to hand</button>
+        <h2 class="title">${escapeHTML(name||('Card '+id))}</h2>
 
-    // ========= GLOBALS =========
-    let idToObj = {};
+        ${play? `<p class="play"><b>Play:</b> ${escapeHTML(play)}</p>`:''}
+        ${effect? `<p class="effect"><b>Effect:</b> ${escapeHTML(effect)}</p>`:''}
+        ${flavor? `<p class="flavor">“${escapeHTML(flavor)}”</p>`:''}
 
-    // ========= RENDER =========
-    // Expects: payload = { headers: [...], rows: [...] }
-    function render(payload){
-      const headers = payload.headers || [];
-      const rows = payload.rows || [];
-      const resultsEl = document.getElementById('results');
+        <div class="line"></div>
 
-      if (!rows.length) {
-        resultsEl.innerHTML = '<p>No cards found.</p>';
-        return;
-      }
-
-      // Convert rows -> objects
-      const objs = rows.map(r => {
-        const o = {};
-        headers.forEach((h,i) => o[h] = r[i]);
-        return o;
-      });
-
-      // Reindex by ID
-      idToObj = {};
-      objs.forEach(o => { if (o.ID != null && o.ID !== '') idToObj[o.ID] = o; });
-
-      // Render cards in original field order
-      resultsEl.innerHTML = objs.map(o => cardHTML(o, { showAdd: true })).join('');
-    }
-
-    // ========= CARD TEMPLATE (mirrors original field order) =========
-    function cardHTML(o, opts = {}) {
-      const id     = safe(o.ID);
-      const name   = safe(o.Name);
-      const play   = safe(o.Play);
-      const effect = safe(o.Effect);
-      const flavor = safe(o.Flavor);
-      const skills = safe(o.Skills);
-      const chal   = safe(o.ChallengeValue);
-      const limit  = safe(o.CardLimit);
-      const icon   = o.StoryIcon || '';
-
-      // If StoryIcon is a data URL, show it; if it’s a filename, show initials as placeholder
-      const iconHTML = icon && String(icon).startsWith('data:image')
-        ? `<img alt="icon" src="${icon}">`
-        : `<span style="font-size:12px; color:#7a6b46;">${safe(shortIcon_(icon))}</span>`;
-
-      const addBtn = opts.showAdd
-        ? `<button type="button" onclick="addToHandById('${String(id).replace(/'/g, "\\'")}')">Add</button>`
-        : '';
-
-      return `
-        <div class="card">
-          <div class="cardHead">
-            <div class="iconWrap">${iconHTML}</div>
-            <div class="titleBox">
-              <h3 class="title">${name || `(Card ${id||''})`}</h3>
-              <div class="meta">${id ? `ID: ${id}` : ''}${limit ? ` &middot; Limit: ${limit}` : ''}</div>
-            </div>
-            ${addBtn}
-          </div>
-
-          <div class="fields">
-            ${play   ? fieldHTML('Play',    play,   'play')   : ''}
-            ${effect ? fieldHTML('Effect',  effect, 'effect') : ''}
-            ${flavor ? fieldHTML('Flavor',  flavor, 'flavor') : ''}
-            ${skills ? fieldHTML('Skills',  skills)           : ''}
-            ${chal   ? fieldHTML('Challenge Value', chal)     : ''}
-            ${limit  ? fieldHTML('Card Limit', limit)         : ''}
-          </div>
+        <div class="icons">
+          ${skullSVG()}${skullSVG()}${skullSVG()}${skullSVG()}
         </div>
-      `;
-    }
 
-    function fieldHTML(label, value, cls=''){
-      return `
-        <div class="field ${cls}">
-          <span class="label">${escapeHTML(label)}</span>
-          <div class="val">${escapeHTML(value)}</div>
-        </div>`;
-    }
+        <div class="line"></div>
 
-    function shortIcon_(s){
-      const t = String(s||'').trim();
-      if (!t) return '';
-      const base = t.split('/').pop().split('\\').pop().replace(/\.[a-z0-9]+$/i,'');
-      return base.length > 10 ? base.slice(0,10)+'…' : base;
-    }
+        <div class="challengeBlk">
+          <span class="label">Challenge</span>
+          <div class="subtle">${escapeHTML(skills)}</div>
+        </div>
 
-    // ========= ADD TO HAND =========
-    function addToHandById(id){
-      const base = idToObj[id] ? { ...idToObj[id] } : { ID: id, Name: '(Unknown)' };
-      const hand = document.getElementById('hand');
-      const handItems = document.getElementById('handItems');
-      hand.hidden = false;
+        <div class="footer">
+          <div class="coin">${escapeHTML(limit||'1')}</div>
+          <div class="subtle">#${escapeHTML(id||'')}/<span>${escapeHTML(limit||'2')}</span> · Pulp Alley © 2025</div>
+          ${lockSVG()}
+        </div>
+      </div>
+    `;
+  }
 
-      const div = document.createElement('div');
-      div.className = 'card';
-      div.innerHTML = `
-        <div class="cardHead">
-          <div class="titleBox">
-            <h3 class="title">${escapeHTML(base.Name || base.Title || '(Unknown)')}</h3>
-            <div class="meta">ID: ${escapeHTML(String(base.ID ?? ''))}</div>
-          </div>
-        </div>`;
-      handItems.appendChild(div);
-    }
+  // ---------- SVG bits ----------
+  function skullSVG(){
+    return `<svg class="skull" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path fill="#5b4a2a" d="M12 3c4.2 0 7.5 2.9 7.5 6.9 0 2.6-1.4 4.7-3.7 5.9v2.2c0 .6-.5 1-1 1h-1.2c-.6 0-1-.5-1-1v-1h-1.2v1c0 .6-.4 1-1 1H9.2c-.6 0-1-.5-1-1v-2.2C6 14.6 4.5 12.5 4.5 9.9 4.5 5.9 7.8 3 12 3z"/>
+      <circle cx="9" cy="10" r="1.7" fill="#f6edd9"/>
+      <circle cx="15" cy="10" r="1.7" fill="#f6edd9"/>
+      <rect x="10.6" y="13.2" width="2.8" height="1.6" rx=".8" fill="#f6edd9"/>
+    </svg>`;
+  }
+  function lockSVG(){
+    return `<svg class="lock" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <rect x="6" y="10" width="12" height="10" rx="2" fill="#c5b089" stroke="#8e744e"/>
+      <path d="M8.5 10V8.2C8.5 6 10.4 4.2 12.6 4.2s4.1 1.8 4.1 4V10" fill="none" stroke="#8e744e" stroke-width="1.4"/>
+      <circle cx="12" cy="15" r="1.3" fill="#8e744e"/>
+    </svg>`;
+  }
 
-    // ========= SEARCH (JSONP) =========
-    async function doSearch(){
-      const q = document.getElementById('q').value.trim();
-      const results = document.getElementById('results');
-
-      if (!q) {
-        results.innerHTML = '<p>Please enter a search term.</p>';
-        return;
+  // ---------- SEARCH ----------
+  async function doSearch(){
+    const q = document.getElementById('q').value.trim();
+    const res = document.getElementById('results');
+    if(!q){ res.innerHTML='<p>Please enter a search term.</p>'; return; }
+    res.innerHTML='<p><em>Searching…</em></p>';
+    try{
+      const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=1&_=${Date.now()}`;
+      const payload = await jsonp(url);
+      // normalize if backend returns object arrays
+      if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
+        const list = Array.isArray(payload?.data) ? payload.data : [];
+        const headers = list.length ? Object.keys(list[0]) : [];
+        const rows = list.map(o => headers.map(h => o[h] ?? ''));
+        render({headers,rows});
+      } else {
+        render(payload);
       }
-
-      results.innerHTML = '<p><em>Searching…</em></p>';
-
-      try {
-        const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=1&_=${Date.now()}`;
-        const payload = await jsonp(url); // JSONP bypasses CORS
-
-        // Ensure shape {headers, rows}. If server returns {data:[...]}, adapt here:
-        if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
-          const list = Array.isArray(payload?.data) ? payload.data : [];
-          const headers = list.length ? Object.keys(list[0]) : [];
-          const rows = list.map(obj => headers.map(h => obj[h] ?? ''));
-          render({ headers, rows });
-        } else {
-          render(payload);
-        }
-      } catch (err) {
-        console.error(err);
-        results.innerHTML = `<p style="color:#900;">Search failed: ${escapeHTML(err.message)}</p>`;
-      }
+    } catch(e){
+      console.error(e);
+      res.innerHTML = `<p style="color:#900;">Search failed: ${escapeHTML(e.message)}</p>`;
     }
+  }
+  document.getElementById('btnSearch').onclick=doSearch;
+  document.getElementById('q').addEventListener('keydown',e=>{ if(e.key==='Enter') doSearch(); });
 
-    // Wire up
-    document.getElementById('btnSearch').onclick = doSearch;
-    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-
-    // ========= HELPERS =========
-    function escapeHTML(s){
-      return String(s)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
-    }
-    function safe(v){ return v == null ? '' : String(v); }
-  </script>
+  // ---------- helpers ----------
+  function escapeHTML(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function safe(v){return v==null?'':String(v);}
+</script>
 </body>
 </html>
