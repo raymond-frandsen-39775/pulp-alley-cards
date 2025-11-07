@@ -150,25 +150,6 @@
   <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
 
-    /* Corner ornament */
-    function ornSvg(){
-      return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path fill="#4c2b16" d="M0,0 L64,0 L64,8 C44,8 20,24 8,40 L0,40 Z" opacity=".85"/></svg>';
-    }
-
-    /* Divider (three skull tiles + spear) */
-    function skullDividerSepia(){
-      return '<svg viewBox="0 0 300 36" xmlns="http://www.w3.org/2000/svg">'
-        + '<g stroke="#3c2a1a" stroke-width="2" stroke-linecap="round" fill="none">'
-        + '<path d="M8 18 H95"/><path d="M205 18 H292"/></g>'
-        + '<rect x="110" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
-        + '<rect x="138" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
-        + '<rect x="166" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
-        + '<defs><g id="s"><path d="M12,5 c5,0 9,3.5 9,8 c0,3 -1.5,4.5 -3.5,5.4 v2.2 h-11 v-2.2 C4.5,17.5 3,16 3,13 C3,8.5 7,5 12,5 z" fill="#f7f2e3" stroke="#3c2a1a" stroke-width="0.75"/>'
-        + '<ellipse cx="9" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/><ellipse cx="15" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
-        + '<path d="M12 14 l-1.5 2.2 h3 z" fill="#3c2a1a"/><rect x="8" y="19.2" width="8" height="3.2" rx="0.8" fill="#3c2a1a"/></g></defs>'
-        + '<use href="#s" x="110" y="6"/><use href="#s" x="138" y="6"/><use href="#s" x="166" y="6"/></svg>';
-    }
-
     /* Inline SVG Icon Set (includes enamel coin variants) */
     function iconSVG(name){
       const key = String(name||'').trim().toLowerCase();
@@ -287,7 +268,67 @@
     let idToObj = {};
 
     /* Card HTML builder (matches GoogleIndex.html layout) */
-    function cardHTML(o, opts={}){
+/* Card HTML */
+function cardHTML(o, opts){
+  opts = opts || {};
+  var name = o.Name || 'Untitled',
+      play = o.Play || '',
+      effect = o.Effect || '',
+      flavor = o.Flavor || '',
+      skills = o.Skills || '',
+      id = o.ID || '',
+      cardLimit = o.CardLimit || '',
+      chall = o.ChallengeValue || '',
+      storyIcon = o.StoryIcon || '';
+
+  var html = '<div class="card" data-id="'+escapeAttr(id)+'">'
+    + '<div class="corner tl">'+ornSvg()+'</div>'
+    + '<div class="corner tr">'+ornSvg()+'</div>'
+    + '<div class="corner br">'+ornSvg()+'</div>'
+    + '<div class="corner bl">'+ornSvg()+'</div>';
+
+  // "X" remove button when rendering in the Hand
+  if (opts.isHand) {
+    const uidAttr = opts.uid ? ' data-uid="'+escapeAttr(opts.uid)+'"' : '';
+    html += '<button class="removeBtn"'+uidAttr+' data-id="'+escapeAttr(id)+'" title="Remove from hand">×</button>';
+  }
+
+  if (opts.showAdd)
+    html += '<div class="actions"><button class="btn-add" data-id="'+escapeAttr(id)+'">+ Add to hand</button></div>';
+
+  html += '<div class="title">'+escapeHtml(name)+'</div>';
+
+  if (play) {
+    const normalizedPlay = String(play).trim().toLowerCase();
+    const mustPlay = normalizedPlay === 'you must play immediately.';
+    const playStyle  = mustPlay ? 'color:#a00;font-weight:900;' : '';
+    const labelStyle = mustPlay ? 'color:#a00;' : '';
+    html += '<div class="row" style="'+playStyle+'"><span class="label" style="'+labelStyle+'">Play:</span> '+nl2br(escapeHtml(play))+'</div>';
+  }
+  if (effect)
+    html += '<div class="row"><span class="label">Effect:</span> '+nl2br(escapeHtml(effect))+'</div>';
+
+  if (flavor) {
+    let f = String(flavor).trim();
+    if (!/^["“].*["”]$/.test(f)) f = '"'+f+'"';
+    html += '<div class="flavor">'+escapeHtml(f)+'</div>';
+  }
+
+  html += '<div class="divider">'+skullDividerSepia()+'</div>';
+  html += '<div class="challengeHdr">Challenge</div>';
+
+  if (skills)
+    html += '<div class="skills">'+escapeHtml(skills)+'</div>';
+
+  html += '<div class="badge left">'+(chall ? escapeHtml(chall) : '—')+'</div>';
+
+  html += renderIconInline(storyIcon); // right badge
+
+  html += '<div class="footer">#'+escapeHtml(id)+'/'+escapeHtml(cardLimit)+' • Pulp Alley © 2025</div>'
+       +  '</div>';
+
+  return html;
+}
       const showAdd = !!opts.showAdd;
       const icon = iconSVG(o.Icon||'');
       return `
@@ -314,6 +355,64 @@
         </div>
       `;
     }
+// Right badge renderer — supports data-URL images or keyword icons
+function renderIconInline(storyIcon){
+  const s = String(storyIcon||'').trim();
+  if (!s) return '<div class="badge right">'+iconSVG('lock')+'</div>'; // default lock
+
+  // If the sheet stores a data URL image, show it
+  if (s.startsWith('data:image')) {
+    return '<div class="badge right"><img alt="" src="'+s+'" style="width:100%;height:100%;object-fit:contain"></div>';
+  }
+
+  // Otherwise map common names to your inline SVG set
+  const key = s.toLowerCase();
+  const known = ['lock','glass','gear','star','skull','bolt','book'];
+  if (known.includes(key)) {
+    return '<div class="badge right">'+iconSVG(key)+'</div>';
+  }
+
+  // Fallback: show first letter(s)
+  return '<div class="badge right" title="'+escapeAttr(s)+'"'
+       + ' style="font-weight:900;font-size:14px;color:#3c2a1a;">'
+       + escapeHtml(s.slice(0,2).toUpperCase())
+       + '</div>';
+}
+
+// Corner ornament SVG (same as your Google page)
+function ornSvg(){
+  return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+       + '<path fill="#4c2b16" d="M0,0 L64,0 L64,8 C44,8 20,24 8,40 L0,40 Z" opacity=".85"/></svg>';
+}
+
+// Divider SVG with three skull tiles
+function skullDividerSepia(){
+  return '<svg viewBox="0 0 300 36" xmlns="http://www.w3.org/2000/svg">'
+       + '<g stroke="#3c2a1a" stroke-width="2" stroke-linecap="round" fill="none">'
+       + '<path d="M8 18 H95"/><path d="M205 18 H292"/></g>'
+       + '<rect x="110" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+       + '<rect x="138" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+       + '<rect x="166" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+       + '<defs><g id="s">'
+       + '<path d="M12,5 c5,0 9,3.5 9,8 c0,3 -1.5,4.5 -3.5,5.4 v2.2 h-11 v-2.2 C4.5,17.5 3,16 3,13 C3,8.5 7,5 12,5 z" fill="#f7f2e3" stroke="#3c2a1a" stroke-width="0.75"/>'
+       + '<ellipse cx="9" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
+       + '<ellipse cx="15" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
+       + '<path d="M12 14 l-1.5 2.2 h3 z" fill="#3c2a1a"/>'
+       + '<rect x="8" y="19.2" width="8" height="3.2" rx="0.8" fill="#3c2a1a"/></g></defs>'
+       + '<use href="#s" x="110" y="6"/><use href="#s" x="138" y="6"/><use href="#s" x="166" y="6"/></svg>';
+}
+
+// Your inline icon set (gear/star/skull/bolt/book/lock/glass…)
+function iconSVG(name){ /* keep the implementation you already have */ }
+
+// Text helpers
+function escapeHtml(s){
+  return String(s)
+   .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function escapeAttr(s){ return escapeHtml(s).replace(/"/g,'&quot;'); }
+function nl2br(s){ return String(s).replace(/\r?\n/g,'<br>'); }
 
     /* Render results payload (same structure as your GAS page) */
     function render(payload){
