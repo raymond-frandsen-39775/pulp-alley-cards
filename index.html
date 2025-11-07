@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Pulp Alley Fortune Card Lookup</title>
 <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-<style>
+  <style>
   :root{
     --bg:#cdbd98;
     --bg-top:#cdbd98;
@@ -117,17 +117,125 @@
   <div class="wrap">
     <h1>Pulp Alley Fortune Card Lookup</h1>
     <div class="bar">
-      <input id="q" type="search" placeholder="Lucky" />
+      <input id="q" type="search" placeholder="Search by ID or Name..." />
       <button id="btnSearch" type="button">Search</button>
     </div>
 
     <div id="results">Type a query and click Search…</div>
   </div>
+  
+  <!-- Sticky hand header + grid -->
+  <div class="handHeader">
+    <div class="handTitle">Hand: <span id="handCount">0</span></div>
+    <div class="handControls">
+      <button id="btnClearHand">Clear Hand</button>
+    </div>
+  </div>
+  <div id="hand" class="handGrid"></div>
 
+  <!-- Confirm modal -->
+  <div id="confirm" class="modal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modalBox">
+      <h3 id="confirmTitle" class="modalTitle">Remove card?</h3>
+      <p class="modalMsg">This card will be removed from your hand.</p>
+      <div class="modalBtns">
+        <button id="confirmYes" class="btnDanger">Remove</button>
+        <button id="confirmNo">Cancel</button>
+      </div>
+    </div>
+  </div>
 <script>
   // ---------- CONFIG ----------
   const GAS_URL = 'https://script.google.com/macros/s/AKfycbxzfKR_CuPgnn6XNWympqPeMWWcG-zBj7XMPLjFjag5vBtbpgW7gUfpV3ON-vYlUas9lg/exec';
+    /* Corner ornament */
+    function ornSvg(){
+      return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path fill="#4c2b16" d="M0,0 L64,0 L64,8 C44,8 20,24 8,40 L0,40 Z" opacity=".85"/></svg>';
+    }
 
+    /* Divider (three skull tiles + spear) */
+    function skullDividerSepia(){
+      return '<svg viewBox="0 0 300 36" xmlns="http://www.w3.org/2000/svg">'
+        + '<g stroke="#3c2a1a" stroke-width="2" stroke-linecap="round" fill="none">'
+        + '<path d="M8 18 H95"/><path d="M205 18 H292"/></g>'
+        + '<rect x="110" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+        + '<rect x="138" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+        + '<rect x="166" y="6" width="24" height="24" fill="#2b1a10" stroke="#3c2a1a"/>'
+        + '<defs><g id="s"><path d="M12,5 c5,0 9,3.5 9,8 c0,3 -1.5,4.5 -3.5,5.4 v2.2 h-11 v-2.2 C4.5,17.5 3,16 3,13 C3,8.5 7,5 12,5 z" fill="#f7f2e3" stroke="#3c2a1a" stroke-width="0.75"/>'
+        + '<ellipse cx="9" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/><ellipse cx="15" cy="12" rx="2" ry="2.8" fill="#3c2a1a"/>'
+        + '<path d="M12 14 l-1.5 2.2 h3 z" fill="#3c2a1a"/><rect x="8" y="19.2" width="8" height="3.2" rx="0.8" fill="#3c2a1a"/></g></defs>'
+        + '<use href="#s" x="110" y="6"/><use href="#s" x="138" y="6"/><use href="#s" x="166" y="6"/></svg>';
+    }
+
+    /* Inline SVG Icon Set (includes enamel coin variants) */
+    function iconSVG(name){
+      const key = String(name||'').trim().toLowerCase();
+      const uid = Math.random().toString(36).slice(2, 8); // unique per call
+
+      switch (key) {
+        case 'gear':
+          return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><g fill="currentColor">'
+               + '<path d="M28 6h8l2 6 6 2 6-2 4 7-5 4 1 6 5 4-4 7-6-2-6 2-2 6h-8l-2-6-6-2-6 2-4-7 5-4-1-6-5-4 4-7 6 2 6-2 2-6z"/>'
+               + '<circle cx="32" cy="32" r="10" fill="#fff" fill-opacity=".15"/></g></svg>';
+
+        case 'star':
+          return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M32 6l7.5 15.2 16.8 2.4-12.1 11.8 2.9 16.7L32 44.6 16.9 52.9l2.9-16.7L7.7 23.6 24.5 21z"/></svg>';
+
+        case 'skull':
+          return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+               + '<path d="M32 10c9 0 16 6.8 16 15.2 0 5.7-3 8.6-6.8 10.3V40H22.8v-4.5C19 34 16 31 16 25.2 16 16.8 23 10 32 10z" fill="currentColor"/>'
+               + '<ellipse cx="26" cy="26" rx="3.5" ry="4.5" fill="#fff" fill-opacity=".1"/>'
+               + '<ellipse cx="38" cy="26" rx="3.5" ry="4.5" fill="#fff" fill-opacity=".1"/>'
+               + '<path d="M28 30l-2.2 3.2h4.4zM24 36h16v3H24z" fill="#fff" fill-opacity=".15"/></svg>';
+
+        case 'bolt':
+          return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M38 6 14 36h14l-2 22 26-32H38z"/></svg>';
+
+        case 'book':
+          return '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">'
+               + '<path d="M10 14c8-3 12-3 20 0v36c-8-3-12-3-20 0V14z" fill="currentColor"/>'
+               + '<path d="M54 14c-8-3-12-3-20 0v36c8-3 12-3 20 0V14z" fill="currentColor"/>'
+               + '<path d="M30 50c-6-2-10-2-16 0M50 50c-6-2-10-2-16 0" stroke="#fff" stroke-width="2" opacity=".25" fill="none"/></svg>';
+
+        /* “Coin” enamel styles for right badge */
+        case 'glass': {
+          const gBronze = `gBronzeMag_${uid}`, gEnamel = `gEnamelMag_${uid}`;
+          return ''+
+            '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+            '  <defs>'+
+            `    <radialGradient id="${gBronze}" cx="30%" cy="25%" r="80%"><stop offset="0%" stop-color="#e7bf97"/><stop offset="50%" stop-color="#b68459"/><stop offset="100%" stop-color="#744f33"/></radialGradient>`+
+            `    <radialGradient id="${gEnamel}" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#f4efe6"/></radialGradient>`+
+            '  </defs>'+
+            `  <circle cx="32" cy="32" r="31" fill="url(#${gBronze})" />`+
+            `  <circle cx="32" cy="32" r="29" fill="url(#${gEnamel})" stroke="#c1b092" stroke-width="1"/>`+
+            '  <g stroke="#3c2a1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none">'+
+            '    <circle cx="28" cy="28" r="10" />'+
+            '    <line x1="35" y1="35" x2="46" y2="46" />'+
+            '  </g>'+
+            '</svg>';
+        }
+
+        case 'lock': {
+          const gBronze = `gBronzeLock_${uid}`, gEnamel = `gEnamelLock_${uid}`;
+          return ''+
+            '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">'+
+            '  <defs>'+
+            `    <radialGradient id="${gBronze}" cx="30%" cy="25%" r="80%"><stop offset="0%" stop-color="#e7bf97"/><stop offset="50%" stop-color="#b68459"/><stop offset="100%" stop-color="#744f33"/></radialGradient>`+
+            `    <radialGradient id="${gEnamel}" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#f4efe6"/></radialGradient>`+
+            '  </defs>'+
+            `  <circle cx="32" cy="32" r="31" fill="url(#${gBronze})" />`+
+            `  <circle cx="32" cy="32" r="29" fill="url(#${gEnamel})" stroke="#c1b092" stroke-width="1"/>`+
+            '  <g stroke="#3c2a1a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none">'+
+            '    <path d="M24 30 v-6 a8 8 0 0 1 16 0 v6" />'+
+            '    <rect x="22" y="30" width="20" height="16" rx="2" ry="2" fill="#3c2a1a" />'+
+            '    <circle cx="32" cy="38" r="2" fill="#f4efe6" stroke="none"/>'+
+            '    <line x1="32" y1="40" x2="32" y2="44" stroke="#f4efe6" stroke-width="2"/>'+
+            '  </g>'+
+            '</svg>';
+        }
+
+        default: return '';
+      }
+    }
   // ---------- JSONP helper ----------
   function jsonp(url){
     return new Promise((resolve,reject)=>{
@@ -151,46 +259,33 @@
   }
 
   // ---------- CARD ----------
-  function cardHTML(o){
-    const name   = safe(o.Name);
-    const id     = safe(o.ID);
-    const play   = safe(o.Play);
-    const effect = safe(o.Effect);
-    const flavor = safe(o.Flavor);
-    const skills = safe(o.Skills);
-    const chall  = safe(o.ChallengeValue);
-    const limit  = safe(o.CardLimit);
+    function cardHTML(o, opts={}){
+      const showAdd = !!opts.showAdd;
+      const icon = iconSVG(o.Icon||'');
+      return `
+        <div class="card">
+          <div class="corner tl">${ornSvg()}</div>
+          <div class="corner tr">${ornSvg()}</div>
+          <div class="corner br">${ornSvg()}</div>
+          <div class="corner bl">${ornSvg()}</div>
 
-    return `
-      <div class="card">
-        <button class="addBtn" onclick="alert('Added to hand: ${escapeHTML(name||('Card '+id))}')">+ Add to hand</button>
-        <h2 class="title">${escapeHTML(name||('Card '+id))}</h2>
+          <div class="title">${escapeHtml(o.Name||'')}</div>
 
-        ${play? `<p class="play"><b>Play:</b> ${escapeHTML(play)}</p>`:''}
-        ${effect? `<p class="effect"><b>Effect:</b> ${escapeHTML(effect)}</p>`:''}
-        ${flavor? `<p class="flavor">“${escapeHTML(flavor)}”</p>`:''}
+          <div class="row"><span class="label">Type:</span> ${escapeHtml(o.Type||'')}</div>
+          <div class="divider">${skullDividerSepia()}</div>
+          <div class="challengeHdr">${escapeHtml(o.Challenge||'')}</div>
+          <div class="skills">${escapeHtml(o.Skills||'')}</div>
+          ${o.Flavor ? `<div class="flavor">“${escapeHtml(o.Flavor)}”</div>` : ''}
 
-        <div class="line"></div>
+          <div class="badge left">${escapeHtml((o.ID||'').toString())}</div>
+          <div class="badge right">${icon||''}</div>
 
-        <div class="icons">
-          ${skullSVG()}${skullSVG()}${skullSVG()}${skullSVG()}
+          <div class="footer">${escapeHtml(o.Notes||'')}</div>
+
+          ${showAdd ? `<div class="actions"><button class="btn-add" data-id="${escapeAttr(o.ID)}">Add to Hand</button></div>` : ``}
         </div>
-
-        <div class="line"></div>
-
-        <div class="challengeBlk">
-          <span class="label">Challenge</span>
-          <div class="subtle">${escapeHTML(skills)}</div>
-        </div>
-
-        <div class="footer">
-          <div class="coin">${escapeHTML(limit||'1')}</div>
-          <div class="subtle">#${escapeHTML(id||'')}/<span>${escapeHTML(limit||'2')}</span> · Pulp Alley © 2025</div>
-          ${lockSVG()}
-        </div>
-      </div>
-    `;
-  }
+      `;
+    }
 
   // ---------- SVG bits ----------
   function skullSVG(){
