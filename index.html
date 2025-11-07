@@ -12,9 +12,10 @@
     :root{
       --bg:#d6c5a0;
       --paper:#f6edd9;
-      --ink:#4b3a1a;
+      --ink:#3b2d12;
       --line:#b9a37f;
       --soft:#fff8ea;
+      --muted:#6a5832;
     }
 
     html,body{ height:100%; }
@@ -35,7 +36,13 @@
     h1{
       font-family:"Copperplate",Georgia,serif;
       font-size:26px;
+      margin:0 0 8px;
+      letter-spacing:.5px;
+    }
+    .sub{
       margin:0 0 12px;
+      font-size:14px;
+      color:var(--muted);
     }
 
     .bar{
@@ -66,7 +73,7 @@
       background: var(--paper);
     }
 
-    /* Results area */
+    /* Results shell */
     #results{
       text-align:left;
       background: var(--soft);
@@ -74,35 +81,85 @@
       border-radius:8px;
       max-width:1000px;
       margin:16px auto 0;
-      overflow:auto;
-      min-height:64px;
       border:1px solid rgba(0,0,0,.1);
+      min-height:64px;
     }
 
-    /* Simple “card” UI for each result */
+    /* Card list mirroring original GAS layout (paper card) */
     .card{
       background:#fff;
       border:1px solid rgba(0,0,0,.08);
-      border-radius:10px;
-      padding:12px;
-      margin:10px 0;
+      border-radius:12px;
+      padding:14px 14px 12px;
+      margin:12px 0;
       box-shadow:0 2px 4px rgba(0,0,0,.12);
     }
-    .card h3{
-      margin:0 0 6px;
+    .cardHead{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin-bottom:8px;
+    }
+    .iconWrap{
+      width:48px; height:48px; flex:0 0 48px;
+      border-radius:50%;
+      background:#f2e7ce;
+      display:flex; align-items:center; justify-content:center;
+      overflow:hidden; border:1px solid #d4c4a5;
+    }
+    .iconWrap img{
+      max-width:100%; max-height:100%; display:block;
+      object-fit:contain;
+    }
+    .titleBox{
+      flex:1 1 auto;
+    }
+    .title{
+      margin:0;
       font-size:18px;
+      line-height:1.2;
     }
     .meta{
       font-size:13px;
       opacity:.85;
     }
 
+    .fields{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:8px 16px;
+      margin-top:6px;
+    }
+    .field{
+      background:#fff;
+      border:1px solid rgba(0,0,0,.05);
+      border-radius:8px;
+      padding:8px 10px;
+    }
+    .label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:4px;
+      letter-spacing:.2px;
+      text-transform:uppercase;
+    }
+    .val{ font-size:14px; white-space:pre-wrap; }
+
+    /* Full-width rows for long text */
+    .field.play,
+    .field.effect,
+    .field.flavor{
+      grid-column: 1 / -1;
+    }
+    .flavor .val{ font-style:italic; }
+
     /* “Hand” area (optional) */
     #hand{
       max-width:1000px;
       margin:20px auto 0;
       padding:12px;
-      background:rgba(246,237,217,.9); /* fixed .9 */
+      background:rgba(246,237,217,.9);
       border:1px dashed var(--line);
       border-radius:10px;
     }
@@ -120,7 +177,12 @@
       line-height: 1.4;
       z-index: 1000;
       text-align: left;
-      box-shadow:0 2px 4px rgba(0,0,0,.25); /* fixed .25 */
+      box-shadow:0 2px 4px rgba(0,0,0,.25);
+    }
+
+    /* Responsive */
+    @media (max-width: 720px){
+      .fields{ grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -133,6 +195,7 @@
 
   <div class="wrap">
     <h1>Pulp Alley Card Lookup</h1>
+    <p class="sub">Search by ID, name, skills, or effect text.</p>
 
     <div class="bar">
       <input id="q" type="search" placeholder="Search cards…" />
@@ -141,7 +204,7 @@
 
     <div id="results">Type a query and click Search…</div>
 
-    <!-- Optional “hand” container to show items added via Add buttons -->
+    <!-- Optional “hand” container -->
     <div id="hand" hidden>
       <strong>Your Hand</strong>
       <div id="handItems"></div>
@@ -166,6 +229,7 @@
         };
 
         s.onerror = () => {
+          console.error('JSONP failed for', s.src);
           reject(new Error('JSONP request failed'));
           delete window[cb];
           s.remove();
@@ -177,7 +241,6 @@
     }
 
     // ========= GLOBALS =========
-    // Global lookup of ID -> object (used by addToHandById)
     let idToObj = {};
 
     // ========= RENDER =========
@@ -192,27 +255,37 @@
         return;
       }
 
-      // Turn table back into list of objects per row
+      // Convert rows -> objects
       const objs = rows.map(r => {
         const o = {};
         headers.forEach((h,i) => o[h] = r[i]);
         return o;
       });
 
-      // Rebuild ID map
+      // Reindex by ID
       idToObj = {};
-      objs.forEach(o => {
-        if (o.ID != null && o.ID !== '') idToObj[o.ID] = o;
-      });
+      objs.forEach(o => { if (o.ID != null && o.ID !== '') idToObj[o.ID] = o; });
 
+      // Render cards in original field order
       resultsEl.innerHTML = objs.map(o => cardHTML(o, { showAdd: true })).join('');
     }
 
-    // ========= MINIMAL CARD TEMPLATE =========
+    // ========= CARD TEMPLATE (mirrors original field order) =========
     function cardHTML(o, opts = {}) {
-      const title = o.Name || o.Title || o.Card || `Card ${o.ID ?? ''}`;
-      const subtitle = o.Type || o.Category || '';
-      const id = o.ID ?? '';
+      const id     = safe(o.ID);
+      const name   = safe(o.Name);
+      const play   = safe(o.Play);
+      const effect = safe(o.Effect);
+      const flavor = safe(o.Flavor);
+      const skills = safe(o.Skills);
+      const chal   = safe(o.ChallengeValue);
+      const limit  = safe(o.CardLimit);
+      const icon   = o.StoryIcon || '';
+
+      // If StoryIcon is a data URL, show it; if it’s a filename, show initials as placeholder
+      const iconHTML = icon && String(icon).startsWith('data:image')
+        ? `<img alt="icon" src="${icon}">`
+        : `<span style="font-size:12px; color:#7a6b46;">${safe(shortIcon_(icon))}</span>`;
 
       const addBtn = opts.showAdd
         ? `<button type="button" onclick="addToHandById('${String(id).replace(/'/g, "\\'")}')">Add</button>`
@@ -220,20 +293,45 @@
 
       return `
         <div class="card">
-          <h3>${escapeHTML(title)}</h3>
-          <div class="meta">
-            ${id ? `ID: ${escapeHTML(String(id))}` : ''}${subtitle ? ` &middot; ${escapeHTML(subtitle)}` : ''}
+          <div class="cardHead">
+            <div class="iconWrap">${iconHTML}</div>
+            <div class="titleBox">
+              <h3 class="title">${name || `(Card ${id||''})`}</h3>
+              <div class="meta">${id ? `ID: ${id}` : ''}${limit ? ` &middot; Limit: ${limit}` : ''}</div>
+            </div>
+            ${addBtn}
           </div>
-          <div class="actions" style="margin-top:6px;">${addBtn}</div>
+
+          <div class="fields">
+            ${play   ? fieldHTML('Play',    play,   'play')   : ''}
+            ${effect ? fieldHTML('Effect',  effect, 'effect') : ''}
+            ${flavor ? fieldHTML('Flavor',  flavor, 'flavor') : ''}
+            ${skills ? fieldHTML('Skills',  skills)           : ''}
+            ${chal   ? fieldHTML('Challenge Value', chal)     : ''}
+            ${limit  ? fieldHTML('Card Limit', limit)         : ''}
+          </div>
         </div>
       `;
     }
 
+    function fieldHTML(label, value, cls=''){
+      return `
+        <div class="field ${cls}">
+          <span class="label">${escapeHTML(label)}</span>
+          <div class="val">${escapeHTML(value)}</div>
+        </div>`;
+    }
+
+    function shortIcon_(s){
+      const t = String(s||'').trim();
+      if (!t) return '';
+      const base = t.split('/').pop().split('\\').pop().replace(/\.[a-z0-9]+$/i,'');
+      return base.length > 10 ? base.slice(0,10)+'…' : base;
+    }
+
     // ========= ADD TO HAND =========
     function addToHandById(id){
-      // Create a copy or a fallback object
       const base = idToObj[id] ? { ...idToObj[id] } : { ID: id, Name: '(Unknown)' };
-
       const hand = document.getElementById('hand');
       const handItems = document.getElementById('handItems');
       hand.hidden = false;
@@ -241,9 +339,12 @@
       const div = document.createElement('div');
       div.className = 'card';
       div.innerHTML = `
-        <h3>${escapeHTML(base.Name || base.Title || '(Unknown)')}</h3>
-        <div class="meta">ID: ${escapeHTML(String(base.ID ?? ''))}</div>
-      `;
+        <div class="cardHead">
+          <div class="titleBox">
+            <h3 class="title">${escapeHTML(base.Name || base.Title || '(Unknown)')}</h3>
+            <div class="meta">ID: ${escapeHTML(String(base.ID ?? ''))}</div>
+          </div>
+        </div>`;
       handItems.appendChild(div);
     }
 
@@ -261,7 +362,7 @@
 
       try {
         const url = `${GAS_URL}?mode=json&q=${encodeURIComponent(q)}&page=1&_=${Date.now()}`;
-        const payload = await jsonp(url); // JSONP to bypass CORS
+        const payload = await jsonp(url); // JSONP bypasses CORS
 
         // Ensure shape {headers, rows}. If server returns {data:[...]}, adapt here:
         if (!Array.isArray(payload.headers) || !Array.isArray(payload.rows)) {
@@ -278,7 +379,7 @@
       }
     }
 
-    // Wire up button and Enter-to-search
+    // Wire up
     document.getElementById('btnSearch').onclick = doSearch;
     document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
 
@@ -291,6 +392,7 @@
         .replace(/"/g,'&quot;')
         .replace(/'/g,'&#39;');
     }
+    function safe(v){ return v == null ? '' : String(v); }
   </script>
 </body>
 </html>
