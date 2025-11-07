@@ -1,7 +1,28 @@
     // ===== CONFIG =====
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbyZgs9DSPDUnbE63xiwhTefRqp20bpbSaD3illB_060SlDtmlYyjovgYecKBHIEjnRI0g/exec';
+    
+	// ===== Clear hand =====
+    document.getElementById('btnClearHand').addEventListener('click', () => {
+      if(!handEl.firstChild) return;
+      // Reuse modal to confirm
+      document.getElementById('confirmTitle').textContent = 'Clear entire hand?';
+      document.querySelector('#confirm .modalMsg').textContent = 'All cards will be removed from your hand.';
+      modal.classList.add('show');
+      btnYes.onclick = () => { handEl.innerHTML=''; updateHandCount(); restoreConfirmText(); closeModal(); };
+      btnNo.onclick  = () => { restoreConfirmText(); closeModal(); };
+      modal.addEventListener('click', (e)=> { if(e.target===modal){ restoreConfirmText(); closeModal(); } }, { once:true });
+      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ restoreConfirmText(); closeModal(); } }, { once:true });
+      function restoreConfirmText(){
+        document.getElementById('confirmTitle').textContent = 'Remove card?';
+        document.querySelector('#confirm .modalMsg').textContent = 'This card will be removed from your hand.';
+      }
+    });
 
-    // ===== JSONP helper (for CORS-free Apps Script calls) =====
+    // ===== Wire up search =====
+    document.getElementById('btnSearch').addEventListener('click', () => doSearch(1));
+    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(1); });
+    
+	// ===== JSONP helper (for CORS-free Apps Script calls) =====
     function jsonp(url){
       return new Promise((resolve, reject) => {
         const cb = 'cb_' + Math.random().toString(36).slice(2);
@@ -324,23 +345,4 @@
     function escClose(e){ if(e.key==='Escape') closeModal(); }
     function closeModal(){ modal.classList.remove('show'); pendingRemove=null; }
 
-    // ===== Clear hand =====
-    document.getElementById('btnClearHand').addEventListener('click', () => {
-      if(!handEl.firstChild) return;
-      // Reuse modal to confirm
-      document.getElementById('confirmTitle').textContent = 'Clear entire hand?';
-      document.querySelector('#confirm .modalMsg').textContent = 'All cards will be removed from your hand.';
-      modal.classList.add('show');
-      btnYes.onclick = () => { handEl.innerHTML=''; updateHandCount(); restoreConfirmText(); closeModal(); };
-      btnNo.onclick  = () => { restoreConfirmText(); closeModal(); };
-      modal.addEventListener('click', (e)=> { if(e.target===modal){ restoreConfirmText(); closeModal(); } }, { once:true });
-      window.addEventListener('keydown', (e)=>{ if(e.key==='Escape'){ restoreConfirmText(); closeModal(); } }, { once:true });
-      function restoreConfirmText(){
-        document.getElementById('confirmTitle').textContent = 'Remove card?';
-        document.querySelector('#confirm .modalMsg').textContent = 'This card will be removed from your hand.';
-      }
-    });
 
-    // ===== Wire up search =====
-    document.getElementById('btnSearch').addEventListener('click', () => doSearch(1));
-    document.getElementById('q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(1); });
